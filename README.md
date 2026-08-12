@@ -348,5 +348,3 @@ looked at whether a right answer followed. Fixed by checking the answer's value 
 falling back to refusal detection on an actual miss — validated by regrading every run recorded
 to date before trusting it, twice (once per grader change in this batch): zero spurious flips
 either time.
-#   M o v i e A g e n t  
- 
