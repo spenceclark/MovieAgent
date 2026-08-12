@@ -1,0 +1,10 @@
+bin/
+obj/
+.vs/
+.idea/
+*.user
+*.suo
+appsettings.*.local.json
+
+# Recorded runs. This is the dataset — back it up deliberately, don't commit it by accident.
+runs/

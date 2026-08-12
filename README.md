@@ -184,6 +184,87 @@ unreached tools inline, e.g. `FAIL hop5-title-2025-renter ... never reached get_
 It is a necessary condition, not a sufficient one — calling `get_customer` proves nothing about
 the argument. Read it as a floor on navigation quality.
 
+**NOT FIXED, DOCUMENTED INSTEAD.** `navigation_complete` verifies that every required tool was
+*reached*, not that the chain was *correct*. Real example, qwen2.5:3b, `hop4-inventory-store-city`
+(`runs-20260812-160025.jsonl`): the run calls `get_inventory_item`, `get_store`, `get_staff`,
+`get_address`, `get_city`, `get_country` — every required tool present — and answers "Yerevan,
+Armenia." That's wrong: it resolved the store's *manager's own home address* (via
+`manager_staff_id` → `get_staff` → that staff member's `address_id`), not the store's address
+(`get_store` already returns `address_id` directly). `navigation_complete` is `true` on this run
+regardless, because it only checks which tools ran, never which argument each one ran with. Same
+asymmetry as the truncation cross-check above: it can falsify a claim of navigation, it cannot
+confirm one.
+
+Substring answer matching has the mirror problem: it can pass an answer containing both correct
+and incorrect content. `"ADAPTATION HOLES is in English and Italian"` passes on `"Italian"`
+whether or not "English" being there too is also wrong for some other question shape. Neither of
+these has a general fix attempted here — read the transcript for anything the summary numbers
+alone make you want to trust.
+
+### Argument provenance and schema errors
+
+Two more diagnostics, both computed purely from `arguments_raw`, `result_text` and `question` —
+regrade-safe by the same rule as everything else on this page. See
+[ToolCallDiagnostics.cs](src/MovieAgent.Evaluation/ToolCallDiagnostics.cs) for the exact rules
+and their limits; the short version:
+
+- **`fabricated_argument_count` / `fabricated_arguments`.** An argument value is *grounded* if it
+  appears in the question or in an earlier tool call's result in the same run (never a
+  same-turn sibling call — the model has not seen a sibling's result when it proposes both), and
+  *fabricated* otherwise. `call_id_as_argument_count` is a fabricated-argument subset: values
+  matching `^call_\d+$`, which means the model read one of this harness's own normalised
+  tool-call identifiers out of the conversation and sent it back as though it were data — a
+  harness-caused failure mode, worth its own count rather than blending into ordinary
+  hallucination. `argument_type_mismatch_count` is the opposite kind of near-miss: the value
+  *is* grounded, just sent as the wrong JSON kind for the tool's declared parameter type, e.g.
+  `{"film_id":"3"}` where 3 is a real prior film_id but the tool declares an integer.
+- **`schema_error_count` / `schema_errors`.** Calls that failed for a wrong parameter name or
+  type, classified by matching the *exact* message substrings
+  [ToolArgumentBinder](src/MovieAgent.Tools/ToolArgumentBinder.cs) already produces (`does not
+  take '`, `requires the argument '`, `must be a whole number, but got '`), not by re-deriving
+  validation logic. Deliberately excludes out-of-range ids and too-short search terms — those
+  are the right type and shape, just referring to data that is not there, a data reason rather
+  than a schema one.
+
+Two correctness traps, both hit and fixed while building this, both worth knowing about before
+trusting the numbers on a new corpus:
+
+- **Row-count lines look like data.** Every successful tool result ends in a line like `"1
+  rows"`. Before this was stripped from the grounding search, a fabricated `film_id: 1` would
+  read as *grounded* purely because some earlier result happened to have exactly one row —
+  confirmed against `hop3-film-language`, where the real film_id is 3 and the model fabricated
+  `1`, and the only prior result ended in `"1 rows"`.
+- **Error messages echo the model's own bad input back.** `ToolArgumentBinder`'s messages
+  include the value that failed (`"...but got '$store_id'"`). Without excluding error results
+  from the grounding search, a fabricated value that already failed once looks *grounded* on
+  retry — via nothing but its own error message repeating it back. Confirmed against
+  `hop3-store-manager-email`: `$store_id` sent twice, correctly Fabricated both times only once
+  error text was excluded from the search corpus.
+
+**Known blind spot, not attempted.** Grounding is textual, not semantic — a value appearing
+*anywhere* in an earlier result counts, regardless of which column it came from. An id that is a
+real `store_id` in one row would ground an argument named `customer_id` using the same number.
+Column-aware grounding would need to parse each tool's result shape per call; this deterministic
+classifier does not attempt it, the same trade-off already made for substring answer matching
+above.
+
+### `EmptyAnswer`
+
+A run can stop calling tools with a blank final message. Before this existed that pooled under
+`Answered` alongside every ordinary wrong answer, indistinguishable without opening the
+transcript. `RunOutcomeClassifier.Effective` reclassifies `Answered` with a blank
+`final_answer` to `EmptyAnswer` — applied live in `AgentLoop` for new runs, and by `regrade` for
+old ones, from fields already on the record, no re-running needed. `eval`'s summary and
+`analyse.py` both report it as a separate count.
+
+### `mean_calls_per_iteration`
+
+The batching metric: total tool calls divided by iterations that made at least one call (an
+iteration that ends the run with zero calls would otherwise drag a per-iteration average toward
+zero without saying anything about batching). A model that always asks for one thing at a time
+sits at 1.0; `fanout-actor-most-films` batching three `count_actor_films` calls into a single
+turn pulls it up. Printed in `eval`'s summary and in `analyse.py`'s per-model breakdown.
+
 ## Eval sets
 
 Two files under `EvalSet/`: `pagila-v1.json` (13 questions, unchanged) and `pagila-v2.json`

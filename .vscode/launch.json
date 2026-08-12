@@ -1,0 +1,142 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "check (connectivity)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/MovieAgent.App/bin/Debug/net10.0/MovieAgent.App.dll",
+            "args": ["check"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "stopAtEntry": false,
+            "env": { "DOTNET_ENVIRONMENT": "Development" }
+        },
+        {
+            "name": "verify (eval set vs database)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/MovieAgent.App/bin/Debug/net10.0/MovieAgent.App.dll",
+            "args": ["verify"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "stopAtEntry": false,
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development",
+                "EvalSet__Files": "${input:evalSet}"
+            }
+        },
+        {
+            "name": "tools (print surface)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/MovieAgent.App/bin/Debug/net10.0/MovieAgent.App.dll",
+            "args": ["tools", "${input:surface}"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "stopAtEntry": false,
+            "env": { "DOTNET_ENVIRONMENT": "Development" }
+        },
+        {
+            "name": "ask (one question)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/MovieAgent.App/bin/Debug/net10.0/MovieAgent.App.dll",
+            "args": ["ask", "${input:question}"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "stopAtEntry": false,
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development",
+                "Agent__ToolSurface": "${input:surface}"
+            }
+        },
+        {
+            "name": "eval (full set)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/MovieAgent.App/bin/Debug/net10.0/MovieAgent.App.dll",
+            "args": ["eval"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "stopAtEntry": false,
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development",
+                "Agent__ToolSurface": "${input:surface}",
+                "EvalSet__Files": "${input:evalSet}"
+            }
+        },
+        {
+            "name": "eval (filtered by question id)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/MovieAgent.App/bin/Debug/net10.0/MovieAgent.App.dll",
+            "args": ["eval", "${input:questionId}"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "stopAtEntry": false,
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development",
+                "Agent__ToolSurface": "${input:surface}",
+                "EvalSet__Files": "${input:evalSet}"
+            }
+        },
+        {
+            "name": "determinism (repeat one question n times)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/MovieAgent.App/bin/Debug/net10.0/MovieAgent.App.dll",
+            "args": ["determinism", "${input:questionId}"],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "stopAtEntry": false,
+            "env": {
+                "DOTNET_ENVIRONMENT": "Development",
+                "Agent__ToolSurface": "${input:surface}",
+                "EvalSet__Files": "${input:evalSet}",
+                "Agent__CaptureWireTraffic": "true",
+                "Llm__Provider": "Ollama"
+            }
+        },
+        {
+            "name": "Attach to process",
+            "type": "coreclr",
+            "request": "attach"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "surface",
+            "type": "pickString",
+            "description": "Tool surface",
+            "options": ["standard", "minimal", "enriched"],
+            "default": "standard"
+        },
+        {
+            "id": "question",
+            "type": "promptString",
+            "description": "Question to put to the agent",
+            "default": "Which country does customer 42 live in?"
+        },
+        {
+            "id": "questionId",
+            "type": "promptString",
+            "description": "Eval question id, or a fragment of one",
+            "default": "hop4"
+        },
+        {
+            "id": "evalSet",
+            "type": "pickString",
+            "description": "Eval set file(s) — the program's own default (no env var set) is v1 only, so old numbers stay comparable; launch.json defaults to both since this is for interactive use",
+            "options": ["pagila-v1.json,pagila-v2.json", "pagila-v1.json", "pagila-v2.json"],
+            "default": "pagila-v1.json,pagila-v2.json"
+        }
+    ]
+}

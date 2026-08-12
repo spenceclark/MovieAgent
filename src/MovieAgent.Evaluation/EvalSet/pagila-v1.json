@@ -1,0 +1,272 @@
+{
+  "eval_set_id": "pagila-v1",
+  "notes": [
+    "expected_answer values were derived by running reference_sql against the loaded database.",
+    "This Pagila is a scaled variant (999 customers, 1500 staff, 500 stores, films in several categories).",
+    "Answers are NOT portable to stock Pagila. Re-run the 'verify' entry point after any reload.",
+    "Reachability is surface-relative: if any step in requires_tools has no available tool,",
+    "the expected behaviour becomes 'decline' no matter what expected_behaviour says.",
+    "expected_behaviour 'decline' means decline on every surface (the entity does not exist).",
+    "requires_tools is a list of steps; each step is a list of alternative tools, any one of which satisfies it."
+  ],
+  "questions": [
+    {
+      "id": "hop2-film-cost",
+      "question": "What is the replacement cost of the film titled ALAMO VIDEOTAPE?",
+      "expected_hops": 2,
+      "expected_behaviour": "answer",
+      "expected_answer": "16.99",
+      "answer_kind": "numeric",
+      "reference_sql": "select replacement_cost from film where title = 'ALAMO VIDEOTAPE'",
+      "requires_tools": [
+        [
+          "search_film"
+        ],
+        [
+          "get_film"
+        ]
+      ],
+      "note": "Two films match 'ALAMO', so the model has to pick the right film_id before reading it."
+    },
+    {
+      "id": "hop2-actor-count",
+      "question": "How many actors are credited in the film AGENT TRUMAN?",
+      "expected_hops": 2,
+      "expected_behaviour": "answer",
+      "expected_answer": "7",
+      "answer_kind": "numeric",
+      "reference_sql": "select count(*) from film_actor fa join film f on f.film_id = fa.film_id where f.title = 'AGENT TRUMAN'",
+      "requires_tools": [
+        [
+          "search_film"
+        ],
+        [
+          "get_film_actor_ids",
+          "count_film_actors"
+        ]
+      ],
+      "note": "The model has to count rows itself on minimal and standard."
+    },
+    {
+      "id": "hop2-actor-film-count",
+      "question": "How many films is the actor PENELOPE GUINESS credited in?",
+      "expected_hops": 2,
+      "expected_behaviour": "answer",
+      "expected_answer": "19",
+      "answer_kind": "numeric",
+      "reference_sql": "select count(*) from film_actor fa join actor a on a.actor_id = fa.actor_id where a.first_name = 'PENELOPE' and a.last_name = 'GUINESS'",
+      "requires_tools": [
+        [
+          "search_actor"
+        ],
+        [
+          "get_actor_film_ids",
+          "count_actor_films"
+        ]
+      ],
+      "note": "Three actors share the surname GUINESS, so the search result must be filtered on first name. 19 rows is under the 50-row cap, so no truncation confound."
+    },
+    {
+      "id": "hop3-film-language",
+      "question": "What language is the film ADAPTATION HOLES in?",
+      "expected_hops": 3,
+      "expected_behaviour": "answer",
+      "expected_answer": "Italian",
+      "answer_kind": "exact",
+      "reference_sql": "select l.name from film f join language l on l.language_id = f.language_id where f.title = 'ADAPTATION HOLES'",
+      "requires_tools": [
+        [
+          "search_film"
+        ],
+        [
+          "get_film"
+        ],
+        [
+          "get_language"
+        ]
+      ],
+      "note": "The canonical FK-resolution chain. Deliberately not English: a model answering from priors gets it wrong."
+    },
+    {
+      "id": "hop3-film-categories",
+      "question": "Which categories does the film ALIEN CENTER belong to?",
+      "expected_hops": 3,
+      "expected_behaviour": "answer",
+      "expected_answer": "Comedy; New; Children",
+      "answer_kind": "set",
+      "reference_sql": "select c.name from film f join film_category fc on fc.film_id = f.film_id join category c on c.category_id = fc.category_id where f.title = 'ALIEN CENTER' order by c.name",
+      "requires_tools": [
+        [
+          "search_film"
+        ],
+        [
+          "get_film_category_ids"
+        ],
+        [
+          "get_category"
+        ]
+      ],
+      "note": "Three categories, so the third hop fans out. Tests whether the model resolves all of them or stops at the first."
+    },
+    {
+      "id": "hop3-rental-film-title",
+      "question": "Which film was rented in rental 1?",
+      "expected_hops": 3,
+      "expected_behaviour": "answer",
+      "expected_answer": "BLANKET BEVERLY",
+      "answer_kind": "exact",
+      "reference_sql": "select f.title from rental r join inventory i on i.inventory_id = r.inventory_id join film f on f.film_id = i.film_id where r.rental_id = 1",
+      "requires_tools": [
+        [
+          "get_rental"
+        ],
+        [
+          "get_inventory_item"
+        ],
+        [
+          "get_film"
+        ]
+      ],
+      "note": "Rentals point at inventory, not film. Tests whether the model notices the indirection rather than guessing a film_id from the rental_id."
+    },
+    {
+      "id": "hop3-store-manager-email",
+      "question": "What is the email address of the manager of the store that holds inventory item 1?",
+      "expected_hops": 3,
+      "expected_behaviour": "answer",
+      "expected_answer": "hartmann1448@ratkehaley.com",
+      "answer_kind": "exact",
+      "reference_sql": "select st.email from inventory i join store s on s.store_id = i.store_id join staff st on st.staff_id = s.manager_staff_id where i.inventory_id = 1",
+      "requires_tools": [
+        [
+          "get_inventory_item"
+        ],
+        [
+          "get_store"
+        ],
+        [
+          "get_staff"
+        ]
+      ],
+      "note": "manager_staff_id on store is easy to confuse with store_id on staff. A wrong-direction traversal still returns a plausible email, so this catches confident errors."
+    },
+    {
+      "id": "hop4-customer-country",
+      "question": "Which country does customer 42 live in?",
+      "expected_hops": 4,
+      "expected_behaviour": "answer",
+      "expected_answer": "Thailand",
+      "answer_kind": "exact",
+      "reference_sql": "select co.country from customer cu join address a on a.address_id = cu.address_id join city ci on ci.city_id = a.city_id join country co on co.country_id = ci.country_id where cu.customer_id = 42",
+      "requires_tools": [
+        [
+          "get_customer"
+        ],
+        [
+          "get_address"
+        ],
+        [
+          "get_city"
+        ],
+        [
+          "get_country"
+        ]
+      ],
+      "note": "Four strictly dependent calls with no search step. The cleanest hop-4 chain in the schema."
+    },
+    {
+      "id": "hop4-inventory-store-city",
+      "question": "Inventory item 1 is held at a store. Which city is that store in?",
+      "expected_hops": 4,
+      "expected_behaviour": "answer",
+      "expected_answer": "Boksburg",
+      "answer_kind": "exact",
+      "reference_sql": "select ci.city from inventory i join store s on s.store_id = i.store_id join address a on a.address_id = s.address_id join city ci on ci.city_id = a.city_id where i.inventory_id = 1",
+      "requires_tools": [
+        [
+          "get_inventory_item"
+        ],
+        [
+          "get_store"
+        ],
+        [
+          "get_address"
+        ],
+        [
+          "get_city"
+        ]
+      ],
+      "note": "Hop 4 through a different part of the schema, so the hop-4 figure is not an artefact of the customer path."
+    },
+    {
+      "id": "hop5-title-2025-renter",
+      "question": "Who rented the film ELIZABETH SHANE during 2025?",
+      "expected_hops": 5,
+      "expected_behaviour": "answer",
+      "expected_answer": "BETTY MILLER",
+      "answer_kind": "exact",
+      "reference_sql": "select c.first_name || ' ' || c.last_name from rental r join inventory i on i.inventory_id = r.inventory_id join customer c on c.customer_id = r.customer_id where i.film_id = (select film_id from film where title = 'ELIZABETH SHANE') and r.rental_date >= '2025-01-01' and r.rental_date < '2026-01-01'",
+      "requires_tools": [
+        [
+          "search_film"
+        ],
+        [
+          "get_film_inventory_ids"
+        ],
+        [
+          "get_inventory_rental_ids"
+        ],
+        [
+          "get_customer"
+        ]
+      ],
+      "note": "The deepest chain in the set: title search -> inventory -> rentals -> filter to 2025 -> customer. Seeded from the title, not the description, deliberately: title match is exact and unique, so the fan-out at hop 1 is 1 and the run measures planning rather than search luck. Film 279 has 2 copies and 23 rentals all time, of which exactly 1 falls in 2025, so the answer is single-valued. Max 12 rentals per copy, under the 30-row cap, so no truncation confound."
+    },
+    {
+      "id": "ambiguous-sumo-2025-renter",
+      "question": "Who rented the film about a sumo wrestler in 2025?",
+      "expected_hops": 1,
+      "expected_behaviour": "decline",
+      "expected_answer": null,
+      "answer_kind": "ambiguous",
+      "reference_sql": "select count(distinct r.customer_id) from rental r join inventory i on i.inventory_id = r.inventory_id where i.film_id in (select film_id from film where description ilike '%sumo wrestler%') and r.rental_date >= '2025-01-01' and r.rental_date < '2026-01-01'",
+      "requires_tools": [
+        [
+          "search_film_description"
+        ]
+      ],
+      "note": "QUALITATIVE EXHIBIT, NOT SCORED. 82 films mention a sumo wrestler, across 392 copies and 805 rentals in 2025, giving 545 distinct valid answers. There is no defensible single expected behaviour: declining is reasonable, and so is picking a defensible candidate and saying which. gpt-5.4 got there without search_film_description at all, by truncating the search term to 'sum' so a title search would surface candidates, then reading six films in parallel - genuine tool composition around a deliberate gap in the surface, seen once in 130+ runs. Scoring that as a failure would be nonsense, and so would scoring it as a pass. Read the trace instead.",
+      "scored": false
+    },
+    {
+      "id": "unanswerable-missing-entity",
+      "question": "What is the rental rate of the film ZOMBIE ACCOUNTANT PARADOX?",
+      "expected_hops": 1,
+      "expected_behaviour": "decline",
+      "expected_answer": null,
+      "answer_kind": "decline",
+      "reference_sql": "select count(*) from film where title = 'ZOMBIE ACCOUNTANT PARADOX'",
+      "requires_tools": [
+        [
+          "search_film"
+        ]
+      ],
+      "note": "REFUSAL CASE 1 - entity does not exist. Correct behaviour on every surface: search, get NO ROWS, say so. Any rental rate given is a hallucination."
+    },
+    {
+      "id": "unreachable-total-film-count",
+      "question": "How many films are in the catalogue in total?",
+      "expected_hops": 1,
+      "expected_behaviour": "answer",
+      "expected_answer": "1000",
+      "answer_kind": "numeric",
+      "reference_sql": "select count(*) from film",
+      "requires_tools": [
+        [
+          "count_films"
+        ]
+      ],
+      "note": "REFUSAL CASE 2 - unreachable from the tool surface. Every search tool demands a term of at least two characters, so minimal and standard have no list-everything path and the correct behaviour there is to decline. Enriched has count_films, so the same question flips to answerable. This is the direct measurement of what the counting tool buys."
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "eval_set_id": "pagila-v2",
+  "notes": [
+    "Additive batch. Does not replace or renumber pagila-v1 — run both files together for the full set, or v1 alone to reproduce prior numbers unchanged.",
+    "expected_answer values were derived by running reference_sql against the loaded database on 2026-08-11.",
+    "This Pagila is the same scaled variant as v1 (999 customers, 1500 staff, 500 stores, films in several categories). Re-run 'verify' after any reload.",
+    "expected_hops is the length of the shortest sequential tool-call chain under the CURRENT catalogue (search-if-the-question-names-the-entity, then one call per further lookup), matching v1's convention exactly. It is NOT a literal count of JOINs in reference_sql: e.g. hop2-actor-count (v1) joins two tables in its reference SQL yet is hop2, because get_film_actor_ids consumes the film_id that search_film already returned, with no intermediate 'read the film' step. A junction/list tool keyed on an id already in hand counts as one hop regardless of how many tables its SQL touches underneath. This preserves comparability with v1's published hop numbers; a literal SQL-join-count formula would not have.",
+    "Reachability is surface-relative, same rule as v1: if any step in requires_tools has no available tool on the selected surface, expected behaviour becomes 'decline' regardless of what is written here.",
+    "requires_tools is a list of steps; each step is a list of alternative tools, any one of which satisfies it.",
+    "Categories in this batch: near-miss answerable (nearmiss-*, four distinct distortion shapes so a local model's near-miss score isn't an artefact of picking one shape it happens to be bad at), reachable declines at two difficulty levels (decline-easy-*, decline-hard-*), fan-out combined with depth (fanout-*), and truncation handling (truncation-*, cross-checked against the harness's own record of the tool's stated total, not just the model's final number)."
+  ],
+  "questions": [
+    {
+      "id": "nearmiss-film-language",
+      "question": "What language is the film ALABAMA'S DEVIL in?",
+      "expected_hops": 3,
+      "expected_behaviour": "answer",
+      "expected_answer": "English",
+      "answer_kind": "exact",
+      "reference_sql": "select l.name from film f join language l on l.language_id = f.language_id where f.title = 'ALABAMA DEVIL'",
+      "requires_tools": [["search_film"], ["get_film"], ["get_language"]],
+      "note": "NEAR-MISS 1. The real title is ALABAMA DEVIL; the question deliberately misquotes it as ALABAMA'S DEVIL. search_film('ALABAMA'S DEVIL') returns NO ROWS (verified: 0 matches) because the apostrophe-s is not in the real title. search_film('ALABAMA') returns exactly one match (verified: only ALABAMA DEVIL contains that substring). Correct behaviour: try a shorter fragment after the first miss, per the search tool's own EmptyResultHint, and complete the chain from there. Declining after one failed search here is an over-refusal, not a correct decline — the entity exists and is reachable."
+    },
+    {
+      "id": "nearmiss-film-rate",
+      "question": "What is the rental rate of the film CASABLANCA NIGHTS?",
+      "expected_hops": 2,
+      "expected_behaviour": "answer",
+      "expected_answer": "4.99",
+      "answer_kind": "numeric",
+      "reference_sql": "select rental_rate from film where title = 'CASABLANCA SUPER'",
+      "requires_tools": [["search_film"], ["get_film"]],
+      "note": "NEAR-MISS 2. The real title is CASABLANCA SUPER; NIGHTS is a plausible but wrong second word. search_film('CASABLANCA NIGHTS') returns NO ROWS (verified: 0 matches). search_film('CASABLANCA') returns exactly one match (verified: only CASABLANCA SUPER contains that substring). Shallower than nearmiss-film-language (hop2 not hop3) so a near-miss failure at low depth is distinguishable from one compounded with genuine multi-hop reasoning."
+    },
+    {
+      "id": "nearmiss-actor-film-count",
+      "question": "How many films is the actor Angela Astaire credited in?",
+      "expected_hops": 2,
+      "expected_behaviour": "answer",
+      "expected_answer": "31",
+      "answer_kind": "numeric",
+      "reference_sql": "select count(*) from film_actor fa join actor a on a.actor_id = fa.actor_id where a.first_name = 'ANGELINA' and a.last_name = 'ASTAIRE'",
+      "requires_tools": [["search_actor"], ["get_actor_film_ids", "count_actor_films"]],
+      "note": "NEAR-MISS 3, on the actor table rather than film title, and the only one built on a fixable first-name error rather than a fixable title fragment. The real actor is ANGELINA ASTAIRE; the question says Angela. search_actor('Angela Astaire') returns NO ROWS (verified: the concatenated-name search requires the substring to match, and 'Angela Astaire' is not a substring of 'ANGELINA ASTAIRE'). search_actor('Astaire') returns exactly one match (ASTAIRE is a unique surname in this cast, verified). 31 rows is under every get_actor_film_ids cap (50), so no truncation confound."
+    },
+    {
+      "id": "nearmiss-word-order",
+      "question": "What is the rental duration, in days, of the film PHANTOM WARDROBE?",
+      "expected_hops": 2,
+      "expected_behaviour": "answer",
+      "expected_answer": "6",
+      "answer_kind": "numeric",
+      "reference_sql": "select rental_duration from film where title = 'WARDROBE PHANTOM'",
+      "requires_tools": [["search_film"], ["get_film"]],
+      "note": "NEAR-MISS 4, a deliberately different distortion shape from the other three. Those all fail by a wrong or extra word that a shorter, LEFT-ANCHORED fragment of the SAME failed query recovers from (chop characters off the end, or the whole second word, and retry). This one is a straight word-order swap: the real title is WARDROBE PHANTOM, the question says PHANTOM WARDROBE. Trimming the failed query from either end never produces a matching substring (verified: 'PHANTOM WARDROBE' has 0 matches, and no prefix or suffix of it is a substring of the real title either) — recovery requires trying the two words separately rather than shortening the same wrong string. WARDROBE alone is a unique substring (verified: 1 match); PHANTOM alone is not (verified: 4 matches), so a model that tries PHANTOM first faces a second disambiguation step rather than an immediate hit, making the two words genuinely asymmetric recovery paths. If the local model recovers from the other three near-misses but not this one, that is evidence the earlier three were testing 'can it shorten a query', not 'can it search for two entities under one wrong assumption' — a materially narrower capability than the batch was meant to measure."
+    },
+    {
+      "id": "decline-easy-category",
+      "question": "How many films are in the Steampunk category?",
+      "expected_hops": 1,
+      "expected_behaviour": "decline",
+      "expected_answer": null,
+      "answer_kind": "decline",
+      "reference_sql": "select count(*) from category where name ilike '%steampunk%'",
+      "requires_tools": [["search_category"]],
+      "note": "EASY DECLINE. Verified: no category matches 'Steampunk' (Pagila's 16 fixed genre categories do not include it). One tool, one NO ROWS, nothing else plausible to try — this is the floor of the refusal axis. In the corrected (call-id-normalised) sweep, unanswerable-missing-entity from v1 scored 0/3 on every surface, so this near-identical shape is included again to confirm that is not an artefact of the one v1 instance; if this also fails uniformly, the finding survives a second, independently-labelled probe."
+    },
+    {
+      "id": "decline-hard-director",
+      "question": "Who directed the film ACADEMY DINOSAUR?",
+      "expected_hops": 2,
+      "expected_behaviour": "decline",
+      "expected_answer": null,
+      "answer_kind": "decline",
+      "reference_sql": "select count(*) from information_schema.columns where table_name = 'film' and column_name ilike '%director%'",
+      "requires_tools": [["search_film"], ["get_film"]],
+      "note": "HARD DECLINE. Structural gap, not a missing row: the film exists (film_id 1) and get_film succeeds, but no director is anywhere in the schema — verified against the full column list of the film table (film_id, title, description, release_year, language_id, original_language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update, special_features, fulltext, length_hours) and confirmed no other table holds it. Correct behaviour requires reading the successful get_film result and recognising the field is absent from the record, not receiving a NO ROWS and stopping. reference_sql queries information_schema only to prove the absence for calibration purposes; the model is never given schema access, and information_schema is on ToolCatalogueValidator's banned list for tool SQL."
+    },
+    {
+      "id": "fanout-store-cities",
+      "question": "The film AIRPLANE SIERRA is held at more than one store. Which cities are those stores in?",
+      "expected_hops": 5,
+      "expected_behaviour": "answer",
+      "expected_answer": "Boksburg; Hamilton",
+      "answer_kind": "set",
+      "reference_sql": "select distinct ci.city from inventory i join store s on s.store_id = i.store_id join address a on a.address_id = s.address_id join city ci on ci.city_id = a.city_id where i.film_id = (select film_id from film where title = 'AIRPLANE SIERRA') order by ci.city",
+      "requires_tools": [["search_film"], ["get_film_inventory_ids"], ["get_store"], ["get_address"], ["get_city"]],
+      "note": "FAN-OUT AT DEPTH 1. AIRPLANE SIERRA (film_id 7) has 5 inventory items (verified) across exactly 2 distinct stores (verified), so get_film_inventory_ids fans out to 5 items that the model must collapse to 2 distinct store_ids before descending further. Every v1 3+ hop question was a single linear chain; this is genuine breadth (2 branches) composed with genuine depth (3 further hops per branch: store, address, city) — hop5, same depth as v1's hop5-title-2025-renter, but reached by a wider, shallower-branching path rather than a single narrow one. A model that resolves only one store (e.g. answers 'Boksburg') has done the depth correctly and missed the fan-out."
+    },
+    {
+      "id": "fanout-actor-most-films",
+      "question": "Of the actors credited in the film ANNIE IDENTITY, which one has appeared in the most films, and how many is that?",
+      "expected_hops": 4,
+      "expected_behaviour": "answer",
+      "expected_answer": "CATE MCQUEEN; 30",
+      "answer_kind": "set",
+      "reference_sql": "select a.first_name || ' ' || a.last_name, (select count(*) from film_actor fa2 where fa2.actor_id = a.actor_id) as film_count from film_actor fa join actor a on a.actor_id = fa.actor_id join film f on f.film_id = fa.film_id where f.title = 'ANNIE IDENTITY' order by film_count desc limit 1",
+      "requires_tools": [["search_film"], ["get_film_actor_ids"], ["get_actor"], ["get_actor_film_ids", "count_actor_films"]],
+      "note": "FAN-OUT AT DEPTH 2, the deliberately expensive one in this batch. ANNIE IDENTITY (film_id 26) has exactly 3 credited actors (verified: actor_ids 71, 128, 130), a small enough fan-out to stay well inside the iteration cap. Each of the 3 branches needs TWO further, independent lookups — get_actor for the name and get_actor_film_ids or count_actor_films for the film count — not one, which is what distinguishes this from fanout-store-cities. Shortest correct path is 2 (search + list) + 3 x 2 (per-actor name and count) = 8 tool calls, comfortably under the default cap of 10 but with no slack for a wrong turn or a repeated call. Verified actor film counts: 71=18, 128=30, 130=27, so CATE MCQUEEN (128) is the unambiguous maximum, not a near-tie."
+    },
+    {
+      "id": "truncation-category-count",
+      "question": "How many films are in the Horror category?",
+      "expected_hops": 2,
+      "expected_behaviour": "answer",
+      "expected_answer": "142",
+      "answer_kind": "numeric",
+      "reference_sql": "select count(*) from film_category fc join category c on c.category_id = fc.category_id where c.name = 'Horror'",
+      "requires_tools": [["search_category"], ["get_category_film_ids", "count_category_films"]],
+      "note": "TRUNCATION HANDLING. Horror (category_id 11) has 142 films (verified), against get_category_film_ids's cap of 50 rows (MaxRows in ToolCatalogue.cs). On standard, the tool's own output states the true total on its last line per the frozen format ('142 rows, showing first 50') — the correct answer is already in the text, it does not require pagination. The two failure modes this targets: reading only the 50 visible identifiers and answering 50, or answering 142 correctly without the answer actually having come from that line (rare, but a bare correct/incorrect score can't tell the two 142s apart). ToolOutputFormat.TryParseTruncation lets the grader recover the stated total from every tool call in the run independently of what the model wrote and record it (truncation_seen, truncation_stated_total, answer_matches_stated_total on every graded run, not just this question) alongside whether the model's answer matches it — not proof of what the model read, but a mismatch is proof the answer did not come from this line, which a bare pass/fail cannot show. On enriched, count_category_films returns 142 directly in one call, no truncation notice fires at all, and this is the intended cross-surface contrast: does the count tool change behaviour beyond making things shorter."
+    }
+  ]
+}
