@@ -1,5 +1,5 @@
 using Microsoft.Extensions.AI;
-using MovieAgent.Core.Configuration;
+using MovieAgent.Agent.Configuration;
 
 namespace MovieAgent.Agent;
 

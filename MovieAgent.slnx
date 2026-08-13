@@ -1,11 +1,7 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/MovieAgent/MovieAgent.csproj" />
     <Project Path="src/MovieAgent.Agent/MovieAgent.Agent.csproj" />
-    <Project Path="src/MovieAgent.App/MovieAgent.App.csproj" />
-    <Project Path="src/MovieAgent.Core/MovieAgent.Core.csproj" />
-    <Project Path="src/MovieAgent.Data/MovieAgent.Data.csproj" />
     <Project Path="src/MovieAgent.Evaluation/MovieAgent.Evaluation.csproj" />
-    <Project Path="src/MovieAgent.Llm/MovieAgent.Llm.csproj" />
-    <Project Path="src/MovieAgent.Tools/MovieAgent.Tools.csproj" />
   </Folder>
 </Solution>

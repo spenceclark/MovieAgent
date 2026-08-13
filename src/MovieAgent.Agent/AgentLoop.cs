@@ -6,8 +6,8 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MovieAgent.Agent.Recording;
-using MovieAgent.Core.Abstractions;
-using MovieAgent.Tools;
+using MovieAgent.Agent.Abstractions;
+using MovieAgent.Agent.Tools;
 
 namespace MovieAgent.Agent;
 

@@ -1,12 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <ItemGroup>
-    <ProjectReference Include="..\MovieAgent.Core\MovieAgent.Core.csproj" />
-    <ProjectReference Include="..\MovieAgent.Tools\MovieAgent.Tools.csproj" />
-  </ItemGroup>
+  <!--
+    The agent and everything it is built from: the tool-calling loop, the tool catalogue the
+    model is offered, the run recorder, and the small contracts the layer above implements
+    (ISqlQueryExecutor, IWireCapture). No project references by design — this is the bottom of
+    the stack, so the loop can be read without chasing into infrastructure.
+  -->
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.8.3" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.11" />
   </ItemGroup>
 

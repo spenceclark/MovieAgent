@@ -2,8 +2,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MovieAgent.Agent;
 using MovieAgent.Agent.Recording;
-using MovieAgent.Core.Configuration;
-using MovieAgent.Tools;
+using MovieAgent.Agent.Configuration;
+using MovieAgent.Agent.Tools;
 
 namespace MovieAgent.Evaluation;
 

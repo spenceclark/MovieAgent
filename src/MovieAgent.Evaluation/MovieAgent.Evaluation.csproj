@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- The eval set, the grader, and the runner that drives the agent over every question. -->
+
   <ItemGroup>
     <ProjectReference Include="..\MovieAgent.Agent\MovieAgent.Agent.csproj" />
-    <ProjectReference Include="..\MovieAgent.Core\MovieAgent.Core.csproj" />
-    <ProjectReference Include="..\MovieAgent.Tools\MovieAgent.Tools.csproj" />
   </ItemGroup>
 
   <ItemGroup>

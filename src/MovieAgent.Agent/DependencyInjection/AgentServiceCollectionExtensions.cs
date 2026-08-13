@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MovieAgent.Agent.Recording;
-using MovieAgent.Core.Configuration;
+using MovieAgent.Agent.Configuration;
 
 namespace MovieAgent.Agent.DependencyInjection;
 

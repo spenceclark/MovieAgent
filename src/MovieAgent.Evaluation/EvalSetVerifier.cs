@@ -1,5 +1,5 @@
 using System.Globalization;
-using MovieAgent.Core.Abstractions;
+using MovieAgent.Agent.Abstractions;
 
 namespace MovieAgent.Evaluation;
 

@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The console app and the infrastructure it wires up: Postgres access (Data/), the two
+    IChatClient providers (Llm/), and the commands (EntryPoints/). Everything here is
+    incidental to how the agent works — it is the plumbing that lets the agent run.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UserSecretsId>movieagent-app</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MovieAgent.Agent\MovieAgent.Agent.csproj" />
+    <ProjectReference Include="..\MovieAgent.Evaluation\MovieAgent.Evaluation.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.AI" Version="10.8.3" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="10.8.3" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.11" />
+    <PackageReference Include="Npgsql" Version="10.0.3" />
+    <PackageReference Include="OllamaSharp" Version="5.4.30" />
+    <PackageReference Include="OpenAI" Version="2.13.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

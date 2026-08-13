@@ -7,8 +7,11 @@ transcription, not a re-run.
 
 **gpt-5.6-sol and gpt-5.6-terra were added afterwards** and run here directly, on the same
 configuration and graded live at v3. One config difference from the earlier GPT rows: the OpenAI
-client now retries 429/5xx with backoff, which changes resilience, not output. That brings the set
-to 24 models, 22 with run files.
+client now retries 429/5xx with backoff, which changes resilience, not output.
+
+**phi4-mini** was added later still, and **deepseek-r1:8b was re-run** at a higher token cap. Both
+used `Repeats=1` and `MaxOutputTokens` 6000, so their run *counts* are out of 21 rather than 42 —
+rates are comparable, totals are not. That brings the set to **27 models, 25 with run files**.
 
 All 968 runs were then regraded under grader `deterministic-substring-v3`, which makes two changes:
 fabricated arguments are split into invented row ids versus invented search terms, and an answer
@@ -33,7 +36,7 @@ figures below come from the regraded files.
 Corrected in the sheet, highlighted yellow with a cell comment. Every other value in that row —
 and every value in the other 21 rows — matched to the decimal.
 
-A `Notes` column (AJ) is populated for all 26 rows including the two hard fails. The sheet also
+A `Notes` column (AJ) is populated for all 27 rows including the two hard fails. The sheet also
 gains a **`Strict`** column (L, next to `Correct`) and the fabrication column is now split into
 **`Fab. ID`** and **`Fab. Term`** (U and V). Backups: `LlmMoveiAgentResults.backup.xlsx` is the
 original as received, `LlmMoveiAgentResults.prev-v2.xlsx` the pre-split version.
@@ -108,28 +111,68 @@ to GPT-4o and gpt-5.4 on that axis.
 
 ## 3. Losers
 
-Seven of the twenty models that produced a run file scored **≤1 correctly-navigated answer out of
-34**. Their entire score is refusals:
+Eight of the twenty-five models that produced a run file scored **at most one correctly-navigated
+answer**. Their entire score is refusals:
 
-| Model | Strict | Genuine answers /34 | What actually happened |
+| Model | Strict | Genuine answers | What actually happened |
 |---|---|---|---|
-| deepseek-r1:8b | 1 | 0 | Burned the token cap on reasoning; never called a tool |
-| granite3.3:8b | 3 | 0 | Printed tool calls as prose; never used the tool channel |
-| llama3.1:8b | 4 | 1 | Spammed fabricated IDs, 58% of calls errored |
-| llama3.2:3b | 4 | 0 | One call per run, then stops. Never chains |
-| hermes3:8b | 4 | 0 | Leaked the tool-call envelope into the arguments |
-| mistral-nemo:12b | 6 | 0 | One call, then answers. Never takes a second hop |
-| command-r7b | 8 | 0 | Zero tool calls; refused 33 of 34 answerable questions |
+| deepseek-r1:8b | 1 | 0 /34 | Zero tool calls; describes calls in prose and invents tool names |
+| phi4-mini | 1 | 0 /17 | Zero tool calls; emits correct tool-call JSON into the content channel |
+| granite3.3:8b | 3 | 0 /34 | Printed tool calls as prose; never used the tool channel |
+| llama3.1:8b | 4 | 1 /34 | Spammed fabricated IDs, 58% of calls errored |
+| llama3.2:3b | 4 | 0 /34 | One call per run, then stops. Never chains |
+| hermes3:8b | 4 | 0 /34 | Leaked the tool-call envelope into the arguments |
+| mistral-nemo:12b | 6 | 0 /34 | One call, then answers. Never takes a second hop |
+| command-r7b | 8 | 0 /34 | Zero tool calls; refused 33 of 34 answerable questions |
 
-Three of these deserve reclassification as hard fails alongside qwen2.5:1.5b and mistral:
+phi4-mini ran at `Repeats=1`, so its denominators are 21 runs / 17 answerable rather than 42 / 34.
 
-- **granite3.3:8b** made **zero real tool calls in all 42 runs**. It emits tool calls as text —
-  `<|tool call{"name": "search_film", ...}|>` and fenced JSON blocks — in 17 runs. I re-ran it with
-  wire capture to rule out a harness fault: **25 tool definitions were sent in correct Ollama
-  format**, and the model described them accurately in prose before declining to call any. This is
-  model behaviour, not a rig problem.
-- **command-r7b** likewise: 25 tools sent, none called, in every run. Wire-verified.
-- **deepseek-r1:8b** — see below.
+**Four of these are hard fails, not low scorers**, and belong with qwen2.5:1.5b and mistral. All
+four were wire-checked to rule out a harness fault, and in all four **25 tool definitions were sent
+in correct Ollama format** and none were called:
+
+- **granite3.3:8b** — zero real tool calls in all 42 runs. Emits tool calls as text,
+  `<|tool call{"name": "search_film", ...}|>` and fenced JSON blocks, in 17 runs. The model
+  described the tools accurately in prose before declining to call any.
+- **command-r7b** — zero tool calls in all 42 runs; refuses almost everything instead.
+- **deepseek-r1:8b** — zero tool calls in 42 runs at a 2500-token cap *and* in a further 21 runs
+  at 6000. See the retest below: the cap was hiding this failure, not causing it.
+- **phi4-mini** — zero tool calls in 21 runs, and the narrowest miss of the four. See below.
+
+### phi4-mini: the right payload in the wrong channel
+
+Worth separating from the other three, because it is not a model that failed to try. It emits
+**structurally correct tool-call JSON**, with real tool names and real parameter names — into the
+content channel:
+
+```json
+[{"name": "get_film", "arguments": {"film_id": 1}}, {"name": "get_inventory_item", "arguments": {"inventory_id": 2}}]
+```
+
+15 of 21 runs contain that shape. Because the payload is right, this is the one case where a rig
+fault was genuinely plausible, so it was checked two ways rather than one:
+
+- `/api/show` — phi4-mini **declares the `tools` capability**, and its chat template *does* handle
+  tools: it renders them into `<|tool|>…<|/tool|>` and expects calls back wrapped as
+  **`<|tool_call|>[…]<|/tool_call|>`**.
+- Wire capture — 25 tools sent; response carries **no `tool_calls` field**; content holds the bare
+  JSON array with **no `<|tool_call|>` delimiter**.
+
+So the model omits the delimiter its own template requires, Ollama cannot parse the payload, and it
+falls through as text. A model failure, but one pair of tags away from working — and the only
+failure in this group that a template tweak might plausibly rescue.
+
+Two things make it worse than the bare score suggests. It **hallucinates the results as well as the
+calls**, roleplaying whole exchanges with invented rows — inventing the city "Springfield" for
+`hop4-inventory-store-city`, inventing actor ids `[1,2,3]` and concluding "3 actors" for
+`hop2-actor-count`. Confident fabricated data in exactly the right shape is the worst possible
+output for anything downstream that trusts the text. And its text-format calls are frequently
+malformed anyway: `[{"name": "get_actor_film_ids", {"arguments": {"actor_id": 1}}}]` puts the
+arguments in a second object rather than a key, and one run uses `"parameters"` instead of
+`"arguments"`. It also invents tools that do not exist (`search_rental`, `search_inventory_item`).
+
+Its single "correct" is the same planning-monologue false positive as deepseek-r1's, so its true
+score is **0**.
 
 **command-r7b is the cautionary tale for the refusal metric.** It scores a perfect 8/8 on refusal
 accuracy. It also refuses 33 of the 34 answerable questions, and answers none of them. Its 8/42 is
@@ -211,16 +254,46 @@ generation, and it announces itself with a large latency outlier. That is worth 
 detection rule.
 
 **deepseek-r1:8b ignored `Agent:Thinking=false` completely** — reasoning text in 42/42 iterations —
-and then hit the 2500-token cap mid-thought in 31 of 42 runs, producing 31 empty answers and zero
-tool calls for the entire sweep. Mean 2298 output tokens against ~100 for every other model, and 26
-minutes of wall clock. It is **untestable at this setting rather than proven bad**.
+and hit the 2500-token cap mid-thought in 31 of 42 runs, producing 31 empty answers and zero tool
+calls. Mean 2298 output tokens against ~100 for every other model, and 26 minutes of wall clock.
 
-Its single "correct" is still a grader artefact, but not the one I first reported. That run finished
-with `finish_reason: "stop"` and a complete sentence, so it is not a truncation. It is a *planning
-monologue*: the model narrates a call it never makes — "I am calling `search_films_by_title`…" — and
-closes with "if it returns no rows, then the film is not in the database, and I cannot proceed
-further without guessing". The refusal classifier reads that conditional as an actual refusal. This
-is unfixed; see concern 3.
+### The token cap was hiding the failure, not causing it
+
+The obvious read was that 2500 tokens made it untestable. It was re-run at **6000** to check
+(`runs-20260813-162941.jsonl`, 21 questions × 1 repeat):
+
+| | cap 2500 | cap 6000 |
+|---|---|---|
+| `finish_reason: length` | 31/42 (74%) | **3/21 (14%)** |
+| Empty answers | 31 | **3** |
+| **Tool calls emitted** | **0** | **0** |
+| Correct | 1 | 1 (the same false positive) |
+| Mean output tokens | 2,298 | 3,418 |
+| Mean sec/run | 37.6 | **56.2** |
+
+The cap was a real constraint and lifting it removed it — truncation fell from 74% to 14%, so most
+runs now finish cleanly. **The score did not move, because it still made zero tool calls in 21 of 21
+runs.** Every run is exactly one iteration: no tool call means nothing to feed back, so the loop
+terminates on the first turn regardless of budget.
+
+What it does instead is write an essay about calling tools — **309,720 characters of reasoning
+against 10,186 of answer, a 30:1 ratio** — naming tools that mostly do not exist
+(`search_film_by_title` ×3, `get_rental_film_id` ×2, `film_actor_list`; the real `search_film` is
+named once across 21 runs). Two runs abandoned tools entirely and wrote raw SQL.
+
+Wire capture at the 6000 cap settles it: **25 tool definitions sent** in correct Ollama format,
+`think:false` sent, and the response carries no `tool_calls` field at all — 11,497 characters in
+`thinking`, 319 in content, ending
+`<tool>search_film_by_title</tool> with argument: ALAMO VIDEOTAPE`. It invents its own pseudo-syntax
+in the content channel while the real tool-calling channel goes unused. So this is the same failure
+as granite3.3 and command-r7b, and **"untestable at this setting" was wrong** — it is a hard fail.
+
+Its single "correct" is a grader artefact. That run finished with `finish_reason: "stop"` and a
+complete sentence, so it is not a truncation. It is a *planning monologue*: the model narrates a
+call it never makes — "I am calling `search_films_by_title`…" — and closes with "if it returns no
+rows, then the film is not in the database, and I cannot proceed further without guessing". The
+refusal classifier reads that conditional as an actual refusal. Its true score is **0**. This is
+unfixed; see concern 3.
 
 ---
 
@@ -336,10 +409,16 @@ cannot separate "I cannot" from "if X then I cannot". The cheap partial fix is t
 run as declining when it made zero tool calls *and* its answer contains tool-call syntax or
 first-person future-tense planning; the honest fix is an LLM judge on the recorded answer.
 
-**4. `MaxOutputTokens = 2500` is a confound for reasoning models, not a neutral setting.** It
-converted deepseek-r1 from "slow" to "scores 1/42" by truncating it mid-thought in 31 of 42 runs.
-Any conclusion about reasoning models under this configuration is a conclusion about the cap. Either
-raise it substantially for that class or exclude them.
+**4. `MaxOutputTokens` shapes what a reasoning model's failure *looks like*, without changing it.**
+At 2500 deepseek-r1 truncated mid-thought in 31 of 42 runs and banked 31 empty answers, which reads
+like a harness artefact. At 6000 it finishes cleanly in 18 of 21 and still scores zero, because the
+real failure — never emitting a tool call — was never about budget. **Retested rather than assumed**,
+which is the point: the original conclusion here ("untestable at this setting rather than proven
+bad") was wrong, and only a re-run at a different cap could show that. The residual caution stands
+in weaker form — a cap that truncates changes the *shape* of the evidence and makes an empty answer
+ambiguous between "ran out of room" and "had nothing to say" — so a reasoning model should be run at
+a cap it does not hit before any conclusion is drawn from its output. It costs: 50% more wall clock
+per run at 6000 for an identical score.
 
 **5. Small denominators at depth.** Hop 5 is two questions × two repeats = 4 runs, so one run is 25
 points. Hop 4 is 6 runs. The deep end of the headline metric — the part the harness exists to
@@ -408,6 +487,10 @@ metric — the thing the harness was built for.
 | llama3.2:3b | 4 | 0 | 0 | 0 | 0 | 4 | 4 |
 | granite3.3:8b | 4 | 0 | 1 | 0 | 0 | 3 | 9 |
 | deepseek-r1:8b | 1 | 0 | 0 | 0 | 0 | 1 | 3 |
+| phi4-mini * | 1 | 0 | 0 | 0 | 0 | 1 | 1 |
+
+`*` phi4-mini ran at `Repeats=1`, so its denominators are half the rest: 21 runs, chain /10,
+near-miss /4, fan-out /2, trunc /1, decline /4, over-ref /17.
 
 Families: **chain** = the 10 v1 linear FK-resolution questions (hop2–hop5). **near-miss** = 4
 questions whose first search is designed to return NO ROWS. **fan-out** = 2 questions with genuine

@@ -13,7 +13,7 @@ cost, correct refusal on unanswerable questions, run-to-run variance.
 Any tool that resolves a relationship server-side destroys the thing being measured. So:
 
 - **No `execute_sql`, no `get_schema`.** These collapse any question to one or two calls.
-- **One table per tool.** Enforced by [ToolCatalogueValidator](src/MovieAgent.Tools/ToolCatalogueValidator.cs),
+- **One table per tool.** Enforced by [ToolCatalogueValidator](src/MovieAgent.Agent/Tools/ToolCatalogueValidator.cs),
   which rejects any descriptor containing a join or a second `FROM`.
 - **Foreign keys are returned raw.** `get_film` returns `language_id = 1`, never `"English"`.
 - **No pre-joined views.** Pagila's seven (`film_list`, `actor_info`,
@@ -29,20 +29,24 @@ surface, so a violating descriptor cannot hide in an unused tool and be switched
 
 ## Layout
 
+Three projects. Two of them are the interesting ones.
+
 | Project | Role |
 | --- | --- |
-| `MovieAgent.Core` | Options, `QueryResult`, `ISqlQueryExecutor`. No provider SDKs. |
-| `MovieAgent.Data` | Npgsql implementation. Untyped reads, so Pagila's custom types need no mapping. |
-| `MovieAgent.Tools` | Tool descriptors, surfaces, argument binding, the frozen output contract. |
-| `MovieAgent.Agent` | The tool loop, the iteration cap, the JSONL recorder. |
-| `MovieAgent.Evaluation` | Eval set, grader, eval runner, eval-set verifier. |
-| `MovieAgent.Llm` | Chat client construction. The only project referencing OpenAI or OllamaSharp. |
-| `MovieAgent.App` | Host and entry points. |
+| **`MovieAgent.Agent`** | **The agent.** The tool loop, the iteration cap, the JSONL recorder, and `Tools/` — the catalogue of tools the model is offered, argument binding, and the frozen output contract. References nothing: the loop can be read start to finish without leaving the project. |
+| **`MovieAgent.Evaluation`** | **The measurement.** Eval set, grader, eval runner, regrader, eval-set verifier. |
+| `MovieAgent` | Everything incidental: Postgres access (`Data/`), chat client construction (`Llm/`, the only place OpenAI or OllamaSharp appear), the console host and commands (`EntryPoints/`). The executable. |
+
+The dependency direction is `MovieAgent` → `MovieAgent.Evaluation` → `MovieAgent.Agent`, and
+`MovieAgent.Agent` depends on no project at all. That is why the small contracts the agent needs
+from infrastructure — `ISqlQueryExecutor`, `IWireCapture`, the options classes — live in
+`MovieAgent.Agent/Abstractions` and `MovieAgent.Agent/Configuration` and are *implemented* one
+layer up, rather than sitting in a shared `Core` project underneath everything.
 
 ## Commands
 
 ```bash
-dotnet run --project src/MovieAgent.App -- check
+dotnet run --project src/MovieAgent -- check
 ```
 
 | Command | Purpose |
@@ -56,12 +60,12 @@ dotnet run --project src/MovieAgent.App -- check
 Everything is overridable by environment variable:
 
 ```bash
-Agent__ToolSurface=minimal Agent__Repeats=5 Llm__Ollama__Model=qwen3:4b-instruct dotnet run --project src/MovieAgent.App -- eval
+Agent__ToolSurface=minimal Agent__Repeats=5 Llm__Ollama__Model=qwen3:4b-instruct dotnet run --project src/MovieAgent -- eval
 ```
 
 ## Tool surfaces
 
-Three, selected by `Agent:ToolSurface`. Defined in [ToolSurfaces.cs](src/MovieAgent.Tools/ToolSurfaces.cs).
+Three, selected by `Agent:ToolSurface`. Defined in [ToolSurfaces.cs](src/MovieAgent.Agent/Tools/ToolSurfaces.cs).
 
 | Surface | Tools | Contents |
 | --- | --- | --- |
@@ -95,7 +99,7 @@ film_id | title
 - Errors state whether retrying can help: `ERROR: ... You may retry this tool with different
   arguments.` versus `ERROR: ... Retrying will not help.`
 
-Model arguments are untrusted. [ToolArgumentBinder](src/MovieAgent.Tools/ToolArgumentBinder.cs)
+Model arguments are untrusted. [ToolArgumentBinder](src/MovieAgent.Agent/Tools/ToolArgumentBinder.cs)
 re-checks every value against the declared type and range before it reaches Npgsql, regardless
 of what the advertised JSON schema said.
 
@@ -220,7 +224,7 @@ and their limits; the short version:
   `{"film_id":"3"}` where 3 is a real prior film_id but the tool declares an integer.
 - **`schema_error_count` / `schema_errors`.** Calls that failed for a wrong parameter name or
   type, classified by matching the *exact* message substrings
-  [ToolArgumentBinder](src/MovieAgent.Tools/ToolArgumentBinder.cs) already produces (`does not
+  [ToolArgumentBinder](src/MovieAgent.Agent/Tools/ToolArgumentBinder.cs) already produces (`does not
   take '`, `requires the argument '`, `must be a whole number, but got '`), not by re-deriving
   validation logic. Deliberately excludes out-of-range ids and too-short search terms — those
   are the right type and shape, just referring to data that is not there, a data reason rather
@@ -274,8 +278,8 @@ by design; running v1 alone reproduces its numbers exactly.
 `EvalSet:Files` selects which to load (comma-separated), default `pagila-v1.json`:
 
 ```bash
-EvalSet__Files=pagila-v2.json dotnet run --project src/MovieAgent.App -- eval
-EvalSet__Files=pagila-v1.json,pagila-v2.json dotnet run --project src/MovieAgent.App -- verify
+EvalSet__Files=pagila-v2.json dotnet run --project src/MovieAgent -- eval
+EvalSet__Files=pagila-v1.json,pagila-v2.json dotnet run --project src/MovieAgent -- verify
 ```
 
 `verify`, `eval`, `regrade` and `determinism` all honour it. Question ids must be unique across

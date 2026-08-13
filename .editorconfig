@@ -98,10 +98,3 @@ csharp_new_line_before_open_brace = all
 csharp_indent_case_contents = true
 csharp_indent_switch_labels = true
 
-
-# Excluding EFCore migration files from rules
-[**/Migrations/*.cs]
-generated_code = true
-dotnet_diagnostic.CS8981.severity = none
-
-dotnet_diagnostic.CA1873.severity = none
