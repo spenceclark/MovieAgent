@@ -45,6 +45,7 @@ public sealed class AgentLoop(
             Temperature = options.Value.Temperature,
             Reasoning = options.Value.ToReasoningOptions(),
             Seed = options.Value.Seed,
+            MaxOutputTokens = options.Value.MaxOutputTokens,
         };
 
         var messages = new List<ChatMessage>
@@ -85,6 +86,24 @@ public sealed class AgentLoop(
                     }
                 }
 
+                var reasoningText = ExtractReasoningText(response);
+
+                if (!options.Value.Thinking && !string.IsNullOrWhiteSpace(reasoningText))
+                {
+                    // Ollama's think=false is a request, not a guarantee — some models (qwen3
+                    // among them) have been observed returning message.thinking anyway. This is
+                    // the model's choice, not a harness bug, but it means Agent:Thinking=false is
+                    // not a reliable claim that no reasoning was generated or paid for, so it is
+                    // worth knowing about rather than silently trusting the flag.
+                    logger.LogWarning(
+                        "Question {QuestionId} iteration {Iteration}: Agent:Thinking is off but {Model} " +
+                        "returned reasoning text anyway ({Length} chars) — it may be ignoring think=false.",
+                        request.QuestionId,
+                        iteration,
+                        model,
+                        reasoningText.Length);
+                }
+
                 var turnMessages = options.Value.NormaliseToolCallIds
                     ? NormaliseCallIds(response.Messages, ref callSequence)
                     : response.Messages;
@@ -106,7 +125,7 @@ public sealed class AgentLoop(
                     // No tool calls means the model considers itself finished.
                     finalAnswer = response.Text;
                     outcome = RunOutcome.Answered;
-                    iterations.Add(BuildIteration(iteration, response, turnStopwatch, [], exchange));
+                    iterations.Add(BuildIteration(iteration, response, turnStopwatch, [], exchange, reasoningText));
                     break;
                 }
 
@@ -169,7 +188,7 @@ public sealed class AgentLoop(
                     resultContents.Add(new FunctionResultContent(call.CallId, result.Output));
                 }
 
-                iterations.Add(BuildIteration(iteration, response, turnStopwatch, callRecords, exchange));
+                iterations.Add(BuildIteration(iteration, response, turnStopwatch, callRecords, exchange, reasoningText));
                 messages.Add(new ChatMessage(ChatRole.Tool, resultContents));
             }
 
@@ -208,6 +227,7 @@ public sealed class AgentLoop(
             Model = model,
             Seed = options.Value.Seed,
             Temperature = options.Value.Temperature,
+            MaxOutputTokens = options.Value.MaxOutputTokens,
             Thinking = options.Value.Thinking,
             ReplayThinking = options.Value.ReplayThinking,
             Repeat = request.Repeat,
@@ -233,7 +253,8 @@ public sealed class AgentLoop(
         ChatResponse response,
         Stopwatch stopwatch,
         IReadOnlyList<ToolCallRecord> calls,
-        WireExchange? exchange) => new()
+        WireExchange? exchange,
+        string? reasoningText) => new()
         {
             Iteration = iteration,
             RequestSha256 = exchange?.RequestSha256,
@@ -244,7 +265,7 @@ public sealed class AgentLoop(
             ElapsedMilliseconds = stopwatch.ElapsedMilliseconds,
             FinishReason = response.FinishReason?.ToString(),
             AssistantText = string.IsNullOrWhiteSpace(response.Text) ? null : response.Text,
-            ReasoningText = ExtractReasoningText(response),
+            ReasoningText = reasoningText,
             ToolCalls = calls,
         };
 

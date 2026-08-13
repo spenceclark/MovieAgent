@@ -25,6 +25,12 @@ public sealed class AgentOptions : IValidatableOptions
     public float? Temperature { get; set; }
 
     /// <summary>
+    /// Caps generated tokens per turn, via <see cref="ChatOptions.MaxOutputTokens"/> — on
+    /// Ollama, this is <c>num_predict</c>. Null lets the provider/model default apply.
+    /// </summary>
+    public int? MaxOutputTokens { get; set; } = 2500;
+
+    /// <summary>
     /// The <see cref="ReasoningOptions"/> equivalent of <see cref="Thinking"/>, in one place so
     /// every caller that builds a <see cref="ChatOptions"/> — the agent loop, the connectivity
     /// check — constructs it identically. A second, independently-written ternary is how a
@@ -111,6 +117,11 @@ public sealed class AgentOptions : IValidatableOptions
         if (Temperature is < 0 or > 2)
         {
             yield return $"'{SectionName}:{nameof(Temperature)}' must be between 0 and 2.";
+        }
+
+        if (MaxOutputTokens is <= 0)
+        {
+            yield return $"'{SectionName}:{nameof(MaxOutputTokens)}' must be greater than zero, or unset for no cap.";
         }
     }
 }

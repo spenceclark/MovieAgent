@@ -60,7 +60,11 @@ public sealed class ConnectivityCheckEntryPoint : IAppEntryPoint
 
             var response = await _chatClient.GetResponseAsync(
                 [new ChatMessage(ChatRole.User, "Reply with the single word: ready")],
-                new ChatOptions { Reasoning = _agentOptions.ToReasoningOptions() },
+                new ChatOptions
+                {
+                    Reasoning = _agentOptions.ToReasoningOptions(),
+                    MaxOutputTokens = _agentOptions.MaxOutputTokens,
+                },
                 cancellationToken);
 
             var thinking = _agentOptions.Thinking ? "on" : "off";
@@ -86,6 +90,7 @@ public sealed class ConnectivityCheckEntryPoint : IAppEntryPoint
                     Tools = ToolDeclarationFactory.CreateFor(probe),
                     ToolMode = ChatToolMode.Auto,
                     Reasoning = _agentOptions.ToReasoningOptions(),
+                    MaxOutputTokens = _agentOptions.MaxOutputTokens,
                 },
                 cancellationToken);
 

@@ -183,6 +183,9 @@ public sealed record RunRecord
 
     [JsonPropertyName("temperature")] public float? Temperature { get; init; }
 
+    /// <summary>Cap on generated tokens per turn, from Agent:MaxOutputTokens. Null means uncapped.</summary>
+    [JsonPropertyName("max_output_tokens")] public int? MaxOutputTokens { get; init; }
+
     /// <summary>Whether extended reasoning was requested for this run, from Agent:Thinking.</summary>
     [JsonPropertyName("thinking")] public required bool Thinking { get; init; }
 
@@ -285,6 +288,18 @@ public sealed record GradeRecord
     /// hallucination in the usual sense).
     /// </summary>
     [JsonPropertyName("fabricated_argument_count")] public int FabricatedArgumentCount { get; init; }
+
+    /// <summary>
+    /// Fabricated values sent for an id parameter — the model asserting that a specific row
+    /// exists. This is the hallucination the metric exists to catch, and the number to read.
+    /// </summary>
+    [JsonPropertyName("fabricated_id_count")] public int FabricatedIdCount { get; init; }
+
+    /// <summary>
+    /// Fabricated values sent for a search-term parameter. Usually not a fault: a model hunting
+    /// for an entity that does not exist invents terms because that is what searching is.
+    /// </summary>
+    [JsonPropertyName("fabricated_term_count")] public int FabricatedTermCount { get; init; }
 
     /// <summary>The offending "iter N: tool.param=value" entries. Only the fabricated ones, not a full audit.</summary>
     [JsonPropertyName("fabricated_arguments")] public IReadOnlyList<string> FabricatedArguments { get; init; } = [];

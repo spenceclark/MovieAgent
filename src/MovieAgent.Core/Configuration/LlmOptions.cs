@@ -45,6 +45,14 @@ public sealed class OpenAIOptions : IValidatableOptions
     /// <summary>Optional override for OpenAI-compatible gateways. Leave null for api.openai.com.</summary>
     public string? Endpoint { get; set; }
 
+    /// <summary>
+    /// Retries on 429 (and 408/500/502/503/504) with exponential backoff, honouring the
+    /// server's Retry-After header when present. This is the OpenAI SDK's own
+    /// <c>ClientRetryPolicy</c> — MovieAgent only raises the attempt count and turns its
+    /// logging on; the backoff logic itself is not reimplemented here.
+    /// </summary>
+    public int RetryMaxAttempts { get; set; } = 5;
+
     public IEnumerable<string> GetValidationErrors()
     {
         if (string.IsNullOrWhiteSpace(ApiKey))
@@ -61,6 +69,11 @@ public sealed class OpenAIOptions : IValidatableOptions
         if (!string.IsNullOrWhiteSpace(Endpoint) && !Uri.TryCreate(Endpoint, UriKind.Absolute, out _))
         {
             yield return $"'{LlmOptions.SectionName}:OpenAI:Endpoint' must be an absolute URI. Got '{Endpoint}'.";
+        }
+
+        if (RetryMaxAttempts < 0)
+        {
+            yield return $"'{LlmOptions.SectionName}:OpenAI:RetryMaxAttempts' must be zero or greater.";
         }
     }
 }

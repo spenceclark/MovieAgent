@@ -29,7 +29,11 @@ namespace MovieAgent.Evaluation;
 /// </remarks>
 public static partial class Grader
 {
-    public const string Method = "deterministic-substring-v2";
+    /// <summary>
+    /// v3: fabricated arguments split into id vs search term, and an answer truncated by the
+    /// token cap can no longer be graded as a refusal.
+    /// </summary>
+    public const string Method = "deterministic-substring-v3";
 
     private const string ResultNoun =
         @"(?:match(?:es|ing)?|result(?:s)?|record(?:s)?|film(?:s)?|actor(?:s)?|customer(?:s)?|row(?:s)?|entr(?:y|ies)|data|information)";
@@ -78,6 +82,17 @@ public static partial class Grader
         // arguments upthread, and that is exactly the kind of run worth seeing this on.
         var diagnostics = ToolCallDiagnostics.Analyse(run);
 
+        // An answer cut off by the token cap cannot be read as a refusal: "I cannot" and "I
+        // cannot find it without" are the same prefix, and a model that runs out of budget
+        // mid-explanation would otherwise bank refusal credit for stopping.
+        //
+        // Only the LAST iteration counts. An earlier truncated turn followed by a complete one
+        // leaves a complete final answer, and excluding on "any iteration truncated" would erase
+        // genuine refusals: all four such runs in the recorded corpus are llama3.1 over-refusals
+        // whose final turn finished cleanly.
+        var answerTruncated = run.Iterations.Count > 0
+            && string.Equals(run.Iterations[^1].FinishReason, "length", StringComparison.OrdinalIgnoreCase);
+
         GradeRecord WithNavigation(GradeRecord grade) => grade with
         {
             RequiredTools = [.. question.RequiresTools.Select(g => string.Join(" or ", g))],
@@ -88,6 +103,8 @@ public static partial class Grader
             TruncationStatedTotal = truncation?.TotalRows,
             AnswerMatchesStatedTotal = answerMatchesTruncation,
             FabricatedArgumentCount = diagnostics.FabricatedArgumentCount,
+            FabricatedIdCount = diagnostics.FabricatedIdCount,
+            FabricatedTermCount = diagnostics.FabricatedTermCount,
             FabricatedArguments = diagnostics.FabricatedArguments,
             CallIdAsArgumentCount = diagnostics.CallIdAsArgumentCount,
             ArgumentTypeMismatchCount = diagnostics.ArgumentTypeMismatchCount,
@@ -115,7 +132,7 @@ public static partial class Grader
 
         if (shouldDecline)
         {
-            var declined = LooksLikeRefusal(answer);
+            var declined = !answerTruncated && LooksLikeRefusal(answer);
             return WithNavigation(new GradeRecord
             {
                 ExpectedAnswer = question.ExpectedAnswer,
@@ -158,7 +175,7 @@ public static partial class Grader
         // Only reached on a wrong or missing value. Declining an answerable question is
         // recorded separately from a wrong answer — over-refusal and hallucination are
         // different failure modes.
-        if (LooksLikeRefusal(answer))
+        if (!answerTruncated && LooksLikeRefusal(answer))
         {
             return WithNavigation(new GradeRecord
             {

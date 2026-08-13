@@ -116,12 +116,21 @@ public sealed record EvalSummary(
     bool Thinking,
     int Runs,
     int Correct,
+    int NavigatedCorrect,
     int CapHits,
     int Errors,
     int EmptyAnswers,
     double MeanToolCalls,
     double MeanCallsPerIteration,
     int RepeatedCalls,
+    int FabricatedArgumentCount,
+    int FabricatedIdCount,
+    int FabricatedTermCount,
+    int CallIdAsArgumentCount,
+    int ArgumentTypeMismatchCount,
+    int SchemaErrorCount,
+    double? MeanInputTokens,
+    double? MeanOutputTokens,
     IReadOnlyList<HopAccuracy> ByHopDepth,
     RefusalAccuracy Refusals)
 {
@@ -155,6 +164,11 @@ public sealed record EvalSummary(
         var callBearingIterations = graded.SelectMany(g => g.Run.Iterations).Count(it => it.ToolCalls.Count > 0);
         var totalCalls = graded.Sum(g => g.Run.ToolCallCount);
 
+        // Nullable, not zero, when nothing reported usage — "the provider didn't tell us" and
+        // "it cost nothing" are different facts, same rule already applied to per-run totals.
+        var runsWithInputTokens = graded.Where(g => g.Run.TotalInputTokens is not null).ToArray();
+        var runsWithOutputTokens = graded.Where(g => g.Run.TotalOutputTokens is not null).ToArray();
+
         return new EvalSummary(
             evalSetId,
             surface,
@@ -162,12 +176,26 @@ public sealed record EvalSummary(
             thinking,
             graded.Count,
             graded.Count(g => g.Run.Grade?.Correct == true),
+            // The strict score: correct AND, where the question requires traversal, having
+            // actually reached every required tool. Drops passes the model landed on by luck —
+            // llama3.1 calling get_film(1) without searching, then being right because film 1
+            // happens to be English. A decline needs no traversal, so it is exempt.
+            graded.Count(g => g.Run.Grade?.Correct == true
+                && (g.Run.Grade.ExpectedBehaviour != "answer" || g.Run.Grade.NavigationComplete == true)),
             graded.Count(g => g.Run.CapHit),
             graded.Count(g => g.Run.Outcome == RunOutcome.Errored),
             graded.Count(g => g.Run.Outcome == RunOutcome.EmptyAnswer),
             graded.Count == 0 ? 0 : graded.Average(g => g.Run.ToolCallCount),
             callBearingIterations == 0 ? 0 : (double)totalCalls / callBearingIterations,
             graded.Sum(g => g.Run.Iterations.SelectMany(i => i.ToolCalls).Count(c => c.WasRepeat)),
+            graded.Sum(g => g.Run.Grade?.FabricatedArgumentCount ?? 0),
+            graded.Sum(g => g.Run.Grade?.FabricatedIdCount ?? 0),
+            graded.Sum(g => g.Run.Grade?.FabricatedTermCount ?? 0),
+            graded.Sum(g => g.Run.Grade?.CallIdAsArgumentCount ?? 0),
+            graded.Sum(g => g.Run.Grade?.ArgumentTypeMismatchCount ?? 0),
+            graded.Sum(g => g.Run.Grade?.SchemaErrorCount ?? 0),
+            runsWithInputTokens.Length == 0 ? null : runsWithInputTokens.Average(g => (double)g.Run.TotalInputTokens!.Value),
+            runsWithOutputTokens.Length == 0 ? null : runsWithOutputTokens.Average(g => (double)g.Run.TotalOutputTokens!.Value),
             byHop,
             new RefusalAccuracy(
                 refusalCases.Length,
@@ -178,9 +206,20 @@ public sealed record EvalSummary(
 
 /// <summary>
 /// <paramref name="Navigated"/> counts runs that reached every tool the shortest correct chain
-/// needs. It is always at least <paramref name="Correct"/>; the gap between them is runs that
-/// got to the right place and then failed to state the answer.
+/// needs.
 /// </summary>
+/// <remarks>
+/// <paramref name="Correct"/> and <paramref name="Navigated"/> are graded independently —
+/// <c>Correct</c> from substring-matching the final answer text, <c>Navigated</c> from which
+/// required tools actually ran without error — and neither implies the other. Usually
+/// <c>Navigated &gt;= Correct</c> (a run that reached everything but still stated the answer
+/// wrong), but a run can also score <c>Correct</c> while skipping a required tool: it guessed or
+/// already "knew" a value that happened to resolve correctly, or the substring match caught a
+/// wrong-path answer that contained the right value anyway. Confirmed against a real run —
+/// <c>nearmiss-film-rate</c>, where the model called <c>get_film</c> directly on a guessed
+/// <c>film_id</c> without ever calling the required <c>search_film</c>, and the guess happened
+/// to be CASABLANCA NIGHTS at the expected $4.99.
+/// </remarks>
 public sealed record HopAccuracy(int Hops, int Runs, int Correct, int Navigated);
 
 /// <summary>

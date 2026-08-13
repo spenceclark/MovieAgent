@@ -28,6 +28,8 @@ public sealed record ArgumentProvenanceEntry(
 
 public sealed record ToolCallDiagnosticsSummary(
     int FabricatedArgumentCount,
+    int FabricatedIdCount,
+    int FabricatedTermCount,
     IReadOnlyList<string> FabricatedArguments,
     int CallIdAsArgumentCount,
     int ArgumentTypeMismatchCount,
@@ -71,6 +73,8 @@ public static partial class ToolCallDiagnostics
 
         var fabricatedArguments = new List<string>();
         var fabricatedCount = 0;
+        var fabricatedIdCount = 0;
+        var fabricatedTermCount = 0;
         var callIdCount = 0;
         var typeMismatchCount = 0;
         var schemaErrors = new List<string>();
@@ -124,6 +128,7 @@ public static partial class ToolCallDiagnostics
                 {
                     var valueRaw = Stringify(property.Value);
                     var isCallId = CallIdPattern().IsMatch(valueRaw);
+                    var declared = tool?.Parameters.FirstOrDefault(p => string.Equals(p.Name, property.Name, StringComparison.Ordinal));
 
                     ArgumentProvenance provenance;
 
@@ -141,7 +146,6 @@ public static partial class ToolCallDiagnostics
                     }
                     else
                     {
-                        var declared = tool?.Parameters.FirstOrDefault(p => string.Equals(p.Name, property.Name, StringComparison.Ordinal));
                         provenance = declared is not null && IsTypeMismatch(declared.Type, property.Value.ValueKind)
                             ? ArgumentProvenance.TypeMismatch
                             : ArgumentProvenance.Grounded;
@@ -150,6 +154,25 @@ public static partial class ToolCallDiagnostics
                     if (provenance == ArgumentProvenance.Fabricated)
                     {
                         fabricatedCount++;
+
+                        // The split that matters: inventing a row id asserts a specific record
+                        // exists, which is the hallucination this metric was added to catch.
+                        // Inventing a search term is how searching works — a model hunting for
+                        // an entity that turns out not to exist will invent several, and that is
+                        // correct behaviour, not a fault. Counting them together made the strong
+                        // models look reckless: qwen3.5:9b's 48 were 46 search terms on questions
+                        // whose subject does not exist. Undeclared parameters fall in neither
+                        // bucket — the call is already counted as a schema error.
+                        switch (declared?.Type)
+                        {
+                            case ToolParameterType.Integer:
+                                fabricatedIdCount++;
+                                break;
+                            case ToolParameterType.Text:
+                                fabricatedTermCount++;
+                                break;
+                        }
+
                         fabricatedArguments.Add($"iter {iteration}: {call.ToolName}.{property.Name}={valueRaw}");
                     }
                     else if (provenance == ArgumentProvenance.TypeMismatch)
@@ -162,6 +185,8 @@ public static partial class ToolCallDiagnostics
 
         return new ToolCallDiagnosticsSummary(
             fabricatedCount,
+            fabricatedIdCount,
+            fabricatedTermCount,
             fabricatedArguments,
             callIdCount,
             typeMismatchCount,
