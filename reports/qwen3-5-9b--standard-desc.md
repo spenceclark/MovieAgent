@@ -6561,9 +6561,10 @@ Since there is no category called "Steampunk" in this database, the answer to yo
 | method | deterministic-substring-v3 |
 | navigation complete | yes |
 | required tools | search_category |
-| fabricated arguments | 16 (invented id 16, invented search term 0) |
+| fabricated arguments | 0 (invented id 0, invented search term 0) |
+| schema-enumerated ids | 16 (swept a range the tool advertises — counted apart from fabrication, not as it) |
 
-Fabricated:
+Schema-enumerated (swept an advertised range, not invented):
 
 - `iter 2: get_category.category_id=1`
 - `iter 3: get_category.category_id=2`
@@ -6912,9 +6913,10 @@ Since there is no category called "Steampunk" in this database, the answer to yo
 | method | deterministic-substring-v3 |
 | navigation complete | yes |
 | required tools | search_category |
-| fabricated arguments | 16 (invented id 16, invented search term 0) |
+| fabricated arguments | 0 (invented id 0, invented search term 0) |
+| schema-enumerated ids | 16 (swept a range the tool advertises — counted apart from fabrication, not as it) |
 
-Fabricated:
+Schema-enumerated (swept an advertised range, not invented):
 
 - `iter 2: get_category.category_id=1`
 - `iter 3: get_category.category_id=2`

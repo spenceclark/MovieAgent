@@ -4886,7 +4886,8 @@ Good, film_id=33 exists with "1 row". Let me continue checking more IDs to find 
 | navigation complete | no |
 | required tools | count_films |
 | never reached | **count_films** |
-| fabricated arguments | 31 (invented id 31, invented search term 0) |
+| fabricated arguments | 13 (invented id 13, invented search term 0) |
+| schema-enumerated ids | 18 (swept a range the tool advertises — counted apart from fabrication, not as it) |
 | note | `No final answer to grade (outcome IterationCapReached).` |
 
 Fabricated:
@@ -4904,6 +4905,9 @@ Fabricated:
 - `iter 4: get_film.film_id=14`
 - `iter 4: get_film.film_id=15`
 - `iter 5: get_film.film_id=16`
+
+Schema-enumerated (swept an advertised range, not invented):
+
 - `iter 5: get_film.film_id=18`
 - `iter 5: get_film.film_id=19`
 - `iter 5: get_film.film_id=20`
@@ -5504,7 +5508,8 @@ Good, film_id=33 exists with "1 row". Let me continue checking more IDs to find 
 | navigation complete | no |
 | required tools | count_films |
 | never reached | **count_films** |
-| fabricated arguments | 31 (invented id 31, invented search term 0) |
+| fabricated arguments | 13 (invented id 13, invented search term 0) |
+| schema-enumerated ids | 18 (swept a range the tool advertises — counted apart from fabrication, not as it) |
 | note | `No final answer to grade (outcome IterationCapReached).` |
 
 Fabricated:
@@ -5522,6 +5527,9 @@ Fabricated:
 - `iter 4: get_film.film_id=14`
 - `iter 4: get_film.film_id=15`
 - `iter 5: get_film.film_id=16`
+
+Schema-enumerated (swept an advertised range, not invented):
+
 - `iter 5: get_film.film_id=18`
 - `iter 5: get_film.film_id=19`
 - `iter 5: get_film.film_id=20`

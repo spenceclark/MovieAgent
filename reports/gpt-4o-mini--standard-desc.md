@@ -2976,11 +2976,12 @@ The film "ELIZABETH SHANE" was rented by two customers in 2025:
 | scored | no — qualitative exhibit, excluded from every denominator |
 | navigation complete | yes |
 | required tools | search_film_description |
-| fabricated arguments | 5 (invented id 5, invented search term 0) |
+| fabricated arguments | 0 (invented id 0, invented search term 0) |
+| schema-enumerated ids | 5 (swept a range the tool advertises — counted apart from fabrication, not as it) |
 | truncation seen | yes, tool stated 82 rows; answer matches: n/a |
 | note | `No final answer to grade (outcome IterationCapReached).` |
 
-Fabricated:
+Schema-enumerated (swept an advertised range, not invented):
 
 - `iter 5: get_customer_rental_ids.customer_id=1`
 - `iter 6: get_customer_rental_ids.customer_id=2`
@@ -3249,11 +3250,12 @@ Fabricated:
 | scored | no — qualitative exhibit, excluded from every denominator |
 | navigation complete | yes |
 | required tools | search_film_description |
-| fabricated arguments | 4 (invented id 4, invented search term 0) |
+| fabricated arguments | 0 (invented id 0, invented search term 0) |
+| schema-enumerated ids | 4 (swept a range the tool advertises — counted apart from fabrication, not as it) |
 | truncation seen | yes, tool stated 82 rows; answer matches: n/a |
 | note | `No final answer to grade (outcome IterationCapReached).` |
 
-Fabricated:
+Schema-enumerated (swept an advertised range, not invented):
 
 - `iter 7: get_customer_rental_ids.customer_id=1`
 - `iter 8: get_customer_rental_ids.customer_id=2`

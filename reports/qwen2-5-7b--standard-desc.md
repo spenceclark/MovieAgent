@@ -5807,17 +5807,21 @@ Cate McQueen has appeared in the most films out of these three actors, with a to
 | navigation complete | no |
 | required tools | search_category, get_category_film_ids or count_category_films |
 | never reached | **get_category_film_ids or count_category_films** |
-| fabricated arguments | 6 (invented id 6, invented search term 0) |
+| fabricated arguments | 1 (invented id 1, invented search term 0) |
+| schema-enumerated ids | 5 (swept a range the tool advertises — counted apart from fabrication, not as it) |
 | note | `No final answer to grade (outcome IterationCapReached).` |
 
 Fabricated:
+
+- `iter 8: get_film_category_ids.film_id=7`
+
+Schema-enumerated (swept an advertised range, not invented):
 
 - `iter 2: get_film_category_ids.film_id=1`
 - `iter 3: get_film_category_ids.film_id=2`
 - `iter 4: get_film_category_ids.film_id=3`
 - `iter 5: get_film_category_ids.film_id=4`
 - `iter 6: get_film_category_ids.film_id=5`
-- `iter 8: get_film_category_ids.film_id=7`
 
 ---
 
@@ -6080,15 +6084,19 @@ Fabricated:
 | navigation complete | no |
 | required tools | search_category, get_category_film_ids or count_category_films |
 | never reached | **get_category_film_ids or count_category_films** |
-| fabricated arguments | 6 (invented id 6, invented search term 0) |
+| fabricated arguments | 1 (invented id 1, invented search term 0) |
+| schema-enumerated ids | 5 (swept a range the tool advertises — counted apart from fabrication, not as it) |
 | note | `No final answer to grade (outcome IterationCapReached).` |
 
 Fabricated:
+
+- `iter 8: get_film_category_ids.film_id=7`
+
+Schema-enumerated (swept an advertised range, not invented):
 
 - `iter 2: get_film_category_ids.film_id=1`
 - `iter 3: get_film_category_ids.film_id=2`
 - `iter 4: get_film_category_ids.film_id=3`
 - `iter 5: get_film_category_ids.film_id=4`
 - `iter 6: get_film_category_ids.film_id=5`
-- `iter 8: get_film_category_ids.film_id=7`
 

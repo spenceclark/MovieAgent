@@ -15,7 +15,7 @@ The JSONL under `runs/` is the dataset and is gitignored; these are the readable
 
 | Model | Report | Correct | Strict | Runs | Tool calls | Cap hits | Source |
 |---|---|---|---|---|---|---|---|
-| `qwen2.5:1.5b` | [qwen2-5-1-5b--standard-desc.md](qwen2-5-1-5b--standard-desc.md) | 2 | 0 | 42 | 15 | 0 | `runs-20260814-122314.jsonl` |
+| `qwen2.5:1.5b` | [qwen2-5-1-5b--standard-desc.md](qwen2-5-1-5b--standard-desc.md) | 2 | 0 | 42 | 17 | 0 | `runs-20260814-134116.jsonl` |
 | `qwen2.5:3b` | [qwen2-5-3b--standard-desc.md](qwen2-5-3b--standard-desc.md) | 12 | 10 | 42 | 159 | 1 | `runs-20260812-192641.jsonl` |
 | `qwen2.5:7b` | [qwen2-5-7b--standard-desc.md](qwen2-5-7b--standard-desc.md) | 24 | 24 | 42 | 132 | 2 | `runs-20260812-194621.jsonl` |
 | `qwen3:4b-instruct` | [qwen3-4b-instruct--standard-desc.md](qwen3-4b-instruct--standard-desc.md) | 29 | 29 | 42 | 103 | 0 | `runs-20260812-195322.jsonl` |

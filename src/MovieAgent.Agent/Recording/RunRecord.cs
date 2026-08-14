@@ -192,6 +192,19 @@ public sealed record RunRecord
     /// <summary>Whether reasoning text was replayed into history, from Agent:ReplayThinking.</summary>
     [JsonPropertyName("replay_thinking")] public required bool ReplayThinking { get; init; }
 
+    /// <summary>
+    /// Whether provider tool-call identifiers were rewritten to a deterministic sequence for this
+    /// run (<see cref="AgentOptions.NormaliseToolCallIds"/>).
+    /// </summary>
+    /// <remarks>
+    /// Recorded because it is a run variable that changes what the model sees, not a cosmetic
+    /// one: an un-normalised id is echoed back into the conversation and puts random tokens in
+    /// the context. Every other such variable — seed, temperature, thinking, the caps — is on the
+    /// record; this one was not, which made it impossible to tell from the corpus alone which
+    /// runs had it on.
+    /// </remarks>
+    [JsonPropertyName("normalise_tool_call_ids")] public bool NormaliseToolCallIds { get; init; }
+
     /// <summary>Repeat index when the same question is run several times to measure variance.</summary>
     [JsonPropertyName("repeat")] public required int Repeat { get; init; }
 
@@ -309,7 +322,28 @@ public sealed record GradeRecord
     /// <summary>The offending "iter N: tool.param=value" entries. Only the fabricated ones, not a full audit.</summary>
     [JsonPropertyName("fabricated_arguments")] public IReadOnlyList<string> FabricatedArguments { get; init; } = [];
 
+    /// <summary>
+    /// Ids that walk a contiguous stretch of the range their tool advertises — systematic
+    /// enumeration rather than invention. Excluded from <see cref="FabricatedArgumentCount"/>.
+    /// </summary>
+    /// <remarks>
+    /// The grounding corpus is the question plus prior tool results and excludes the tool
+    /// declarations, so a model that reads a parameter's advertised bounds and sweeps them scores
+    /// as fabricating every value. This separates that case out. It is narrow by design — see
+    /// <c>ArgumentProvenance.SchemaEnumerated</c>.
+    /// </remarks>
+    [JsonPropertyName("schema_enumerated_count")] public int? SchemaEnumeratedCount { get; init; }
+
+    [JsonPropertyName("schema_enumerated_arguments")] public IReadOnlyList<string> SchemaEnumeratedArguments { get; init; } = [];
+
     /// <summary>Fabricated arguments whose value matched <c>^call_\d+$</c> — a normalised call id read back as data.</summary>
+    /// <remarks>
+    /// ONLY MEANINGFUL WHEN <see cref="NormaliseToolCallIds"/> IS ON. The detector matches the
+    /// harness's own <c>call_N</c> shape; a raw provider id is an opaque hex string it cannot
+    /// recognise, so with normalisation off this reads zero whatever the model did. Measured, not
+    /// assumed: the same qwen2.5:1.5b sweep scored 0 with normalisation off and 3 with it on, from
+    /// the same behaviour. Read this alongside <c>normalise_tool_call_ids</c> on the same run.
+    /// </remarks>
     [JsonPropertyName("call_id_as_argument_count")] public int? CallIdAsArgumentCount { get; init; }
 
     /// <summary>Grounded but sent as the wrong JSON kind, e.g. <c>{"film_id":"3"}</c> where the tool declares an integer.</summary>

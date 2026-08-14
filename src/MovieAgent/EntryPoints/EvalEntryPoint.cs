@@ -83,6 +83,9 @@ public sealed class EvalEntryPoint : IAppEntryPoint
             $"(call id as argument: {summary.CallIdAsArgumentCount})   " +
             $"type mismatches: {summary.ArgumentTypeMismatchCount}   " +
             $"schema errors: {summary.SchemaErrorCount}");
+        Console.WriteLine(
+            $"schema-enumerated ids: {summary.SchemaEnumeratedCount} " +
+            "(swept a range the tool advertises — counted apart from fabrication, not as it)");
         Console.WriteLine();
 
         Console.WriteLine("by hop depth (answerable questions only)");

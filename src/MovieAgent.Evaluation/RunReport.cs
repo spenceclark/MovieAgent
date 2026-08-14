@@ -287,6 +287,12 @@ public static class RunReport
                 $"{fabricated} (invented id {grade.FabricatedIdCount ?? 0}, invented search term {grade.FabricatedTermCount ?? 0})");
         }
 
+        if (grade.SchemaEnumeratedCount is { } enumerated && enumerated > 0)
+        {
+            Row(md, "schema-enumerated ids",
+                $"{enumerated} (swept a range the tool advertises — counted apart from fabrication, not as it)");
+        }
+
         if (grade.CallIdAsArgumentCount is { } callIds && callIds > 0)
         {
             Row(md, "call id as argument", callIds.ToString(CultureInfo.InvariantCulture));
@@ -320,6 +326,17 @@ public static class RunReport
         {
             md.Append("Fabricated:\n\n");
             foreach (var f in grade.FabricatedArguments)
+            {
+                md.Append("- `").Append(Escape(f)).Append("`\n");
+            }
+
+            md.Append('\n');
+        }
+
+        if (grade.SchemaEnumeratedArguments.Count > 0)
+        {
+            md.Append("Schema-enumerated (swept an advertised range, not invented):\n\n");
+            foreach (var f in grade.SchemaEnumeratedArguments)
             {
                 md.Append("- `").Append(Escape(f)).Append("`\n");
             }

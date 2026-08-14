@@ -16,6 +16,28 @@ public enum ArgumentProvenance
 
     /// <summary>The value is grounded, but sent as the wrong JSON kind for the tool's declared parameter type.</summary>
     TypeMismatch,
+
+    /// <summary>
+    /// Part of a contiguous sweep of an id range the tool advertises — systematic enumeration,
+    /// not invention.
+    /// </summary>
+    /// <remarks>
+    /// Carved out of <see cref="Fabricated"/> because the grounding corpus is the question plus
+    /// prior tool results, and deliberately excludes the tool declarations. A model that reads
+    /// "Category identifier, 1 to 16" off <c>get_category</c>'s schema and walks 1..16 has
+    /// derived every value from something it was legitimately given, but none of it from a
+    /// previous result, so the plain grounding test calls all sixteen fabricated. Measured on
+    /// qwen3.5:9b's <c>decline-easy-category</c>: 16 successful calls, every one flagged.
+    /// <para>
+    /// Deliberately narrow. Being inside the advertised range is not enough on its own — 68% of
+    /// all fabricated ids in the corpus are in range, and most are single blind guesses like
+    /// <c>get_film(film_id=1)</c> on a question that names a title, which is exactly the
+    /// hallucination this metric exists to catch. Contiguity is what separates them: across the
+    /// corpus only 41 of 311 numeric fabricated ids form a sweep, and llama3.1 — the worst
+    /// fabricator in the set at 131 — has none.
+    /// </para>
+    /// </remarks>
+    SchemaEnumerated,
 }
 
 public sealed record ArgumentProvenanceEntry(
@@ -31,6 +53,8 @@ public sealed record ToolCallDiagnosticsSummary(
     int FabricatedIdCount,
     int FabricatedTermCount,
     IReadOnlyList<string> FabricatedArguments,
+    int SchemaEnumeratedCount,
+    IReadOnlyList<string> SchemaEnumeratedArguments,
     int CallIdAsArgumentCount,
     int ArgumentTypeMismatchCount,
     int SchemaErrorCount,
@@ -71,10 +95,11 @@ public static partial class ToolCallDiagnostics
             .SelectMany(it => it.ToolCalls.Select(c => (Iteration: it.Iteration, Call: c)))
             .ToList();
 
-        var fabricatedArguments = new List<string>();
-        var fabricatedCount = 0;
-        var fabricatedIdCount = 0;
-        var fabricatedTermCount = 0;
+        // Classification happens in two passes. Everything except enumeration is a property of a
+        // single argument and is decided inline; enumeration is a property of the whole run — you
+        // cannot tell whether category_id=1 is a sweep or a guess until you have seen 2, 3 and 4 —
+        // so fabricated ids are collected here and revisited once the run has been walked.
+        var pending = new List<PendingArgument>();
         var callIdCount = 0;
         var typeMismatchCount = 0;
         var schemaErrors = new List<string>();
@@ -153,27 +178,7 @@ public static partial class ToolCallDiagnostics
 
                     if (provenance == ArgumentProvenance.Fabricated)
                     {
-                        fabricatedCount++;
-
-                        // The split that matters: inventing a row id asserts a specific record
-                        // exists, which is the hallucination this metric was added to catch.
-                        // Inventing a search term is how searching works — a model hunting for
-                        // an entity that turns out not to exist will invent several, and that is
-                        // correct behaviour, not a fault. Counting them together made the strong
-                        // models look reckless: qwen3.5:9b's 48 were 46 search terms on questions
-                        // whose subject does not exist. Undeclared parameters fall in neither
-                        // bucket — the call is already counted as a schema error.
-                        switch (declared?.Type)
-                        {
-                            case ToolParameterType.Integer:
-                                fabricatedIdCount++;
-                                break;
-                            case ToolParameterType.Text:
-                                fabricatedTermCount++;
-                                break;
-                        }
-
-                        fabricatedArguments.Add($"iter {iteration}: {call.ToolName}.{property.Name}={valueRaw}");
+                        pending.Add(new PendingArgument(iteration, call.ToolName, property.Name, valueRaw, declared));
                     }
                     else if (provenance == ArgumentProvenance.TypeMismatch)
                     {
@@ -183,15 +188,159 @@ public static partial class ToolCallDiagnostics
             }
         }
 
+        var enumerated = FindEnumeratedSweeps(pending);
+
+        var fabricatedArguments = new List<string>();
+        var enumeratedArguments = new List<string>();
+        var fabricatedIdCount = 0;
+        var fabricatedTermCount = 0;
+
+        foreach (var arg in pending)
+        {
+            var label = $"iter {arg.Iteration}: {arg.ToolName}.{arg.ParameterName}={arg.ValueRaw}";
+
+            if (enumerated.Contains(arg))
+            {
+                enumeratedArguments.Add(label);
+                continue;
+            }
+
+            // The split that matters: inventing a row id asserts a specific record exists, which
+            // is the hallucination this metric was added to catch. Inventing a search term is how
+            // searching works — a model hunting for an entity that turns out not to exist will
+            // invent several, and that is correct behaviour, not a fault. Undeclared parameters
+            // fall in neither bucket; the call is already counted as a schema error.
+            switch (arg.Declared?.Type)
+            {
+                case ToolParameterType.Integer:
+                    fabricatedIdCount++;
+                    break;
+                case ToolParameterType.Text:
+                    fabricatedTermCount++;
+                    break;
+            }
+
+            fabricatedArguments.Add(label);
+        }
+
         return new ToolCallDiagnosticsSummary(
-            fabricatedCount,
+            fabricatedArguments.Count,
             fabricatedIdCount,
             fabricatedTermCount,
             fabricatedArguments,
+            enumeratedArguments.Count,
+            enumeratedArguments,
             callIdCount,
             typeMismatchCount,
             schemaErrors.Count,
             schemaErrors);
+    }
+
+    /// <summary>One fabricated argument, held back until the whole run can be examined for sweeps.</summary>
+    private sealed record PendingArgument(
+        int Iteration,
+        string ToolName,
+        string ParameterName,
+        string ValueRaw,
+        ToolParameter? Declared);
+
+    /// <summary>
+    /// Minimum distinct consecutive values before a set of guesses reads as deliberate
+    /// enumeration. Four is a judgement call: two or three consecutive ids happen by chance often
+    /// enough (a model trying 1 then 2), and the corpus shows nothing between 4 and a full sweep.
+    /// </summary>
+    private const int MinimumSweepLength = 4;
+
+    /// <summary>
+    /// Picks out fabricated ids that form a contiguous run of at least
+    /// <see cref="MinimumSweepLength"/> distinct values inside the range the tool advertises,
+    /// grouped per tool and parameter.
+    /// </summary>
+    /// <remarks>
+    /// Both conditions are required. In-range alone is far too weak — most of the corpus's
+    /// fabricated ids are in range and are single blind guesses. Contiguity alone would catch a
+    /// model walking 1..4 of a 1..1000 space, which is enumeration of a sort, but requiring the
+    /// values to sit inside the declared bounds keeps this to arguments the model could actually
+    /// have derived from the schema it was shown.
+    /// </remarks>
+    private static HashSet<PendingArgument> FindEnumeratedSweeps(IReadOnlyList<PendingArgument> pending)
+    {
+        var sweeps = new HashSet<PendingArgument>();
+
+        var groups = pending
+            .Where(a => a.Declared is { Type: ToolParameterType.Integer })
+            .GroupBy(a => (a.ToolName, a.ParameterName), StringTupleComparer.Instance);
+
+        foreach (var group in groups)
+        {
+            var parsed = group
+                .Select(a => (Arg: a, Ok: long.TryParse(a.ValueRaw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n), Value: n))
+                .Where(x => x.Ok)
+                .ToArray();
+
+            if (parsed.Length == 0)
+            {
+                continue;
+            }
+
+            var declared = group.First().Declared!;
+            var inRange = parsed
+                .Where(x => (declared.Minimum is not { } min || x.Value >= min)
+                            && (declared.Maximum is not { } max || x.Value <= max))
+                .ToArray();
+
+            var distinct = inRange.Select(x => x.Value).Distinct().Order().ToArray();
+            if (distinct.Length < MinimumSweepLength)
+            {
+                continue;
+            }
+
+            // Longest run of consecutive integers in the distinct set.
+            var bestStart = 0;
+            var bestLength = 1;
+            var runStart = 0;
+            for (var i = 1; i <= distinct.Length; i++)
+            {
+                if (i < distinct.Length && distinct[i] == distinct[i - 1] + 1)
+                {
+                    continue;
+                }
+
+                if (i - runStart > bestLength)
+                {
+                    bestLength = i - runStart;
+                    bestStart = runStart;
+                }
+
+                runStart = i;
+            }
+
+            if (bestLength < MinimumSweepLength)
+            {
+                continue;
+            }
+
+            var lo = distinct[bestStart];
+            var hi = distinct[bestStart + bestLength - 1];
+            foreach (var x in inRange.Where(x => x.Value >= lo && x.Value <= hi))
+            {
+                sweeps.Add(x.Arg);
+            }
+        }
+
+        return sweeps;
+    }
+
+    private sealed class StringTupleComparer : IEqualityComparer<(string ToolName, string ParameterName)>
+    {
+        public static StringTupleComparer Instance { get; } = new();
+
+        public bool Equals((string ToolName, string ParameterName) x, (string ToolName, string ParameterName) y) =>
+            string.Equals(x.ToolName, y.ToolName, StringComparison.Ordinal)
+            && string.Equals(x.ParameterName, y.ParameterName, StringComparison.Ordinal);
+
+        public int GetHashCode((string ToolName, string ParameterName) obj) =>
+            HashCode.Combine(obj.ToolName, obj.ParameterName);
     }
 
     /// <summary>

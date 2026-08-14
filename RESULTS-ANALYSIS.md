@@ -358,34 +358,47 @@ chain-only metric cluster at 20, 18, 17, 14 — and then fall off to 4, 3, 2, 0.
 **Argument fabrication is the mechanism of failure — but only the id half of it.** Splitting the
 metric changes who looks bad:
 
-| Model | Total | Invented **ids** | Invented **search terms** | of which sequential enumeration |
+| Model | Flagged | Invented **ids** | Invented **search terms** | **Schema-enumerated** |
 |---|---|---|---|---|
 | llama3.1:8b | 145 | **138** | 3 | 0 |
-| qwen3.5:2b-q4_K_M | 88 | **66** | 22 | 0 |
+| qwen3.5:2b-q4_K_M | 88 | 30 | 22 | **36** |
 | qwen2.5:3b | 78 | **67** | 8 | 0 |
-| qwen3.5:9b | 48 | 34 | 14 | **32** |
+| qwen3.5:9b | 48 | **2** | 14 | **32** |
 | llama3.2:3b | 26 | 20 | 6 | 0 |
 | qwen3.5:2b | 24 | 8 | 16 | 0 |
 | hermes3:8b | 21 | 11 | 0 | 0 |
-| qwen2.5:7b | 18 | 18 | 0 | 0 |
+| qwen2.5:7b | 18 | 8 | 0 | **10** |
 | **qwen3.5:4b** | 18 | **0** | **18** | 0 |
 | every model scoring ≥26 except the above | 0 | 0 | 0 | 0 |
 
-Inventing a row id asserts that a specific record exists — that is the hallucination worth
-counting. Inventing a search term is how searching works: a model hunting for an entity that turns
-out not to exist will try several, and that is correct behaviour.
+Three distinct things, and lumping them together made the strong models look reckless.
 
-The split exonerates both strong local models, for different reasons. **qwen3.5:4b's 18 are
-entirely search terms and zero are ids.** qwen3.5:9b's 34 ids look worse until you read them: 32
-are a sequential sweep of `get_category(category_id=1..16)` on `decline-easy-category`, using the
-bounds the tool itself advertises in its description — exhaustive enumeration of a 16-row table, not
-hallucination. It has **2 loose invented ids in 42 runs**. llama3.1's 138, by contrast, have no
-enumeration pattern at all: they are `get_film(film_id=1)` and `get_film(film_id="123")` standing in
-for a search it never performed.
+**Inventing a row id** asserts that a specific record exists. That is the hallucination worth
+counting, and llama3.1's 138 are the pure case: `get_film(film_id=1)` and `get_film(film_id="123")`
+standing in for a search it never performed.
 
-Note also that total ≠ id + term for two models. The remainder is arguments sent on parameter names
-no tool declares — hermes3's 10 are its leaked `CallId`/`FunctionName`/`Arguments` envelope, which is
-also the whole of its schema-error count.
+**Inventing a search term** is how searching works. A model hunting for an entity that turns out not
+to exist will try several, and that is correct behaviour. **qwen3.5:4b's 18 are entirely search
+terms and zero are ids.**
+
+**Schema-enumerated** is the category this analysis was missing until a run was read closely. The
+grounding corpus is the question plus prior tool results, and deliberately excludes the tool
+declarations — so a model that reads `"Category identifier, 1 to 16"` off `get_category`'s own
+schema and walks 1..16 scores as fabricating all sixteen values, despite every call succeeding.
+qwen3.5:9b's `decline-easy-category` is exactly that, and it drops the model from 34 invented ids to
+**2 in 42 runs.**
+
+The obvious fix would have been wrong. **68% of all fabricated ids in the corpus (278 of 409) are
+inside their advertised range**, and most are single blind guesses — treating in-range as grounded
+would have excused llama3.1 entirely. Contiguity is what separates them: only 41 of 311 numeric
+fabricated ids form a sweep of four or more consecutive values, and llama3.1 has none. The
+threshold of four is a judgement call, documented at
+`ArgumentProvenance.SchemaEnumerated`; the corpus shows nothing between four and a full sweep.
+
+Regrading every run under the new classification produced **0 grade flips** and moved exactly three
+rows. Note also that flagged ≠ id + term + enumerated for two models. The remainder is arguments
+sent on parameter names no tool declares — hermes3's 10 are its leaked
+`CallId`/`FunctionName`/`Arguments` envelope, which is also the whole of its schema-error count.
 
 **Distinctive failure signatures**, each visible in the recorded arguments:
 

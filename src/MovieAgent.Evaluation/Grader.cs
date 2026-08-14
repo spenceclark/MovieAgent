@@ -120,6 +120,8 @@ public static partial class Grader
                 FabricatedIdCount = diagnostics.FabricatedIdCount,
                 FabricatedTermCount = diagnostics.FabricatedTermCount,
                 FabricatedArguments = diagnostics.FabricatedArguments,
+                SchemaEnumeratedCount = diagnostics.SchemaEnumeratedCount,
+                SchemaEnumeratedArguments = diagnostics.SchemaEnumeratedArguments,
                 CallIdAsArgumentCount = diagnostics.CallIdAsArgumentCount,
                 ArgumentTypeMismatchCount = diagnostics.ArgumentTypeMismatchCount,
                 SchemaErrorCount = diagnostics.SchemaErrorCount,

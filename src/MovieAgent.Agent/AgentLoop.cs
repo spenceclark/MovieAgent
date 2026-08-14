@@ -235,6 +235,7 @@ public sealed class AgentLoop(
             MaxOutputTokens = options.Value.MaxOutputTokens,
             Thinking = options.Value.Thinking,
             ReplayThinking = options.Value.ReplayThinking,
+            NormaliseToolCallIds = options.Value.NormaliseToolCallIds,
             Repeat = request.Repeat,
             SystemPrompt = request.SystemPrompt,
             SystemPromptSha256 = Agent.SystemPrompt.Sha256(request.SystemPrompt),
