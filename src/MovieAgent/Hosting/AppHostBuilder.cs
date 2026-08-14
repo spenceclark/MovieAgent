@@ -47,7 +47,9 @@ public static class AppHostBuilder
         builder.Services.AddScoped<EvalEntryPoint>();
         builder.Services.AddScoped<VerifyEvalSetEntryPoint>();
         builder.Services.AddScoped<ListToolsEntryPoint>();
+        builder.Services.AddScoped<SqlGuardCheckEntryPoint>();
         builder.Services.AddScoped<RegradeEntryPoint>();
+        builder.Services.AddScoped<ReportEntryPoint>();
         builder.Services.AddScoped<DeterminismEntryPoint>();
         builder.Services.AddSingleton<IAppEntryPoint, EntryPointRouter>();
 

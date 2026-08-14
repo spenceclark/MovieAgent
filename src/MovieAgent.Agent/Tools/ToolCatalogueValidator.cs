@@ -33,7 +33,32 @@ public static partial class ToolCatalogueValidator
 
         foreach (var tool in descriptors)
         {
+            // The shortcut control's tools have no fixed SQL and would sail through every check
+            // below vacuously. They are kept in SqlShortcutCatalogue precisely so they are never
+            // validated as if they were safe; finding one here means someone merged the two.
+            if (tool.Kind != ToolKind.Descriptor)
+            {
+                errors.Add(
+                    $"Tool '{tool.Name}' has kind '{tool.Kind}' and must not be in the main catalogue. " +
+                    "Shortcut tools belong in SqlShortcutCatalogue.");
+                continue;
+            }
+
             var sql = tool.Sql;
+
+            // Dropping `required` from Sql/Table to accommodate the other kinds would otherwise
+            // let a descriptor with no query through, so require them explicitly instead.
+            if (string.IsNullOrWhiteSpace(sql))
+            {
+                errors.Add($"Tool '{tool.Name}' is a descriptor tool with no SQL.");
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(tool.Table))
+            {
+                errors.Add($"Tool '{tool.Name}' is a descriptor tool with no declared table.");
+                continue;
+            }
 
             foreach (var banned in BannedObjects)
             {

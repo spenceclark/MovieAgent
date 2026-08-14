@@ -3,18 +3,45 @@ namespace MovieAgent.Agent.Tools;
 /// <summary>A named subset of <see cref="ToolCatalogue.All"/>. The experimental variable.</summary>
 public sealed record ToolSurface(string Name, IReadOnlyList<string> ToolNames)
 {
+    /// <summary>
+    /// True for the <c>sql-shortcut</c> control surface, where one generic tool answers every
+    /// question.
+    /// </summary>
+    /// <remarks>
+    /// Grading has to change shape when this is set, not just produce worse numbers.
+    /// <c>requires_tools</c> names tools that do not exist here, so the surface-relative decline
+    /// rule would mark every question unanswerable; and navigation, hop depth and argument
+    /// provenance have no meaning when there is one tool. Those are suppressed rather than
+    /// reported as zero, because zero reads as a failure and "not applicable" is the truth.
+    /// </remarks>
+    public bool GenericSql { get; init; }
+
     public IReadOnlyList<ToolDescriptor> Resolve() =>
-        [.. ToolNames.Select(n => ToolCatalogue.ByName.TryGetValue(n, out var d)
+        [.. ToolNames.Select(n => ToolLookup.ByName.TryGetValue(n, out var d)
             ? d
             : throw new InvalidOperationException($"Surface '{Name}' names unknown tool '{n}'."))];
+}
+
+/// <summary>
+/// Every tool the harness knows about, main catalogue and shortcut control together.
+/// </summary>
+/// <remarks>
+/// The two catalogues stay separate so <see cref="ToolCatalogueValidator"/> can keep proving
+/// things about <see cref="ToolCatalogue.All"/> alone. This is the one place they are merged,
+/// and only for name resolution.
+/// </remarks>
+public static class ToolLookup
+{
+    public static IReadOnlyDictionary<string, ToolDescriptor> ByName { get; } =
+        ToolCatalogue.All
+            .Concat(SqlShortcutCatalogue.All)
+            .ToDictionary(t => t.Name, StringComparer.Ordinal);
 }
 
 /// <summary>
 /// The three surfaces under comparison.
 /// </summary>
 /// <remarks>
-/// JUDGEMENT CALL — the brief named the three surfaces but not their contents, so this is my
-/// reading and the most likely thing you will want to change:
 /// <list type="bullet">
 /// <item>
 /// <b>minimal</b> is search and read on the three entity tables only. No junction tools at all,
@@ -92,6 +119,30 @@ public static class ToolSurfaces
         "count_customer_rentals",
     ]);
 
+    /// <summary>
+    /// THE CONTROL, NOT A CAPABILITY. Two tools: read the schema, run any SELECT. Everything the
+    /// other four surfaces exist to forbid.
+    /// </summary>
+    /// <remarks>
+    /// The no-shortcuts constraint is the premise of the whole harness, and until this surface
+    /// existed it was asserted rather than measured. Running the chain questions here separates
+    /// two failures the main sweep conflates: a model that cannot emit a structured tool call at
+    /// all, and a model that can call one tool but cannot compose a chain across turns. The first
+    /// should fail here too — <c>execute_sql</c> is still a tool call. The second should improve
+    /// sharply, because one call now suffices.
+    /// <para>
+    /// <b>An improvement here is not evidence of a better agent.</b> Text-to-SQL has far more
+    /// training data behind it than agentic tool composition, so a model doing better on this
+    /// surface shows the task changed. Read the delta, not the absolute score.
+    /// </para>
+    /// </remarks>
+    public static ToolSurface SqlShortcut { get; } = new("sql-shortcut",
+    [
+        "get_schema",
+        "execute_sql",
+    ])
+    { GenericSql = true };
+
     public static IReadOnlyDictionary<string, ToolSurface> ByName { get; } =
         new Dictionary<string, ToolSurface>(StringComparer.OrdinalIgnoreCase)
         {
@@ -99,6 +150,7 @@ public static class ToolSurfaces
             [Standard.Name] = Standard,
             [StandardWithDescription.Name] = StandardWithDescription,
             [Enriched.Name] = Enriched,
+            [SqlShortcut.Name] = SqlShortcut,
         };
 
     public static ToolSurface Get(string name) =>

@@ -38,7 +38,7 @@ public sealed class ToolExecutor
     {
         var stopwatch = Stopwatch.StartNew();
 
-        if (!ToolCatalogue.ByName.TryGetValue(invocation.ToolName, out var tool)
+        if (!ToolLookup.ByName.TryGetValue(invocation.ToolName, out var tool)
             || !surface.ToolNames.Contains(invocation.ToolName, StringComparer.Ordinal))
         {
             // Not in the surface is indistinguishable from not existing, from the model's
@@ -51,10 +51,27 @@ public sealed class ToolExecutor
                 stopwatch);
         }
 
+        if (tool.Kind == ToolKind.Schema)
+        {
+            stopwatch.Stop();
+            return new ToolInvocationResult(
+                tool.Name,
+                SqlShortcutCatalogue.SchemaListing,
+                IsError: false,
+                IsTerminal: false,
+                RowsReturned: 0,
+                stopwatch.ElapsedMilliseconds);
+        }
+
         var binding = ToolArgumentBinder.Bind(tool, invocation.Arguments);
         if (!binding.Success)
         {
             return Error(tool.Name, ToolOutputFormat.RetryableError(binding.Error!), isTerminal: false, stopwatch);
+        }
+
+        if (tool.Kind == ToolKind.FreeSql)
+        {
+            return await ExecuteFreeSqlAsync(tool, binding.Values, stopwatch, cancellationToken);
         }
 
         try
@@ -86,6 +103,64 @@ public sealed class ToolExecutor
                 tool.Name,
                 ToolOutputFormat.TerminalError($"The tool '{tool.Name}' failed to run against the database."),
                 isTerminal: true,
+                stopwatch);
+        }
+    }
+
+    /// <summary>
+    /// The <c>sql-shortcut</c> path: screen the model's SQL, run it read-only, and render it
+    /// through the same output contract as every other tool.
+    /// </summary>
+    /// <remarks>
+    /// A database error is returned to the model verbatim and marked retryable, which is the
+    /// opposite of the descriptor path's behaviour and deliberate: there, a SQL failure is a
+    /// harness fault the model cannot fix, so retrying is pointless. Here the model wrote the
+    /// query, so Postgres's complaint is legitimate feedback and acting on it is part of what
+    /// this surface measures.
+    /// </remarks>
+    private async Task<ToolInvocationResult> ExecuteFreeSqlAsync(
+        ToolDescriptor tool,
+        IReadOnlyDictionary<string, object?>? values,
+        Stopwatch stopwatch,
+        CancellationToken cancellationToken)
+    {
+        var query = values is not null && values.TryGetValue("query", out var raw) ? raw as string : null;
+        var verdict = SqlShortcutGuard.Inspect(query);
+
+        if (!verdict.Allowed)
+        {
+            return Error(tool.Name, ToolOutputFormat.RetryableError(verdict.Reason!), isTerminal: false, stopwatch);
+        }
+
+        try
+        {
+            var result = await _sql.QueryReadOnlyAsync(verdict.Sql, cancellationToken);
+            var output = ToolOutputFormat.Rows(result, tool.MaxRows);
+
+            stopwatch.Stop();
+            return new ToolInvocationResult(
+                tool.Name,
+                output,
+                IsError: false,
+                IsTerminal: false,
+                RowsReturned: result.RowCount,
+                stopwatch.ElapsedMilliseconds);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Model-supplied SQL failed.");
+
+            // Postgres's own message, unedited. Column-does-not-exist is exactly the feedback a
+            // model needs to fix its next attempt, and whether it uses it is the measurement.
+            var message = ex.Message.ReplaceLineEndings(" ").Trim();
+            return Error(
+                tool.Name,
+                ToolOutputFormat.RetryableError($"The database rejected the query: {message}"),
+                isTerminal: false,
                 stopwatch);
         }
     }

@@ -9,22 +9,10 @@ namespace MovieAgent.Agent;
 /// comparison.
 /// </summary>
 /// <remarks>
-/// JUDGEMENT CALL — this wording is a starting point and is one of the things most worth
-/// owning yourself. Three choices in it that will affect the numbers:
-/// <list type="bullet">
-/// <item>It states that identifiers must be resolved by further calls. Removing that sentence
-/// tests whether the model works the constraint out unaided, which is arguably the more
-/// interesting measurement.</item>
-/// <item>It gives explicit permission to decline. Without it, refusal accuracy will collapse
-/// towards zero and you will be measuring sycophancy rather than reasoning.</item>
-/// <item>It says nothing about the schema. Describing the tables would be a shortcut of the
-/// same family as a get_schema tool.</item>
-/// </list>
-/// </remarks>
 public static class SystemPrompt
 {
-    public const string Default =
-        """
+  public const string Default =
+      """
         You are answering questions about a DVD rental database by calling tools.
 
         How the tools work:
@@ -50,6 +38,6 @@ public static class SystemPrompt
           Declining when the data is not reachable is a correct answer.
         """;
 
-    public static string Sha256(string prompt) =>
-        Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(prompt)));
+  public static string Sha256(string prompt) =>
+      Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(prompt)));
 }

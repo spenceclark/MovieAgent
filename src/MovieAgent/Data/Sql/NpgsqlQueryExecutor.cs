@@ -73,6 +73,59 @@ public sealed class NpgsqlQueryExecutor : ISqlQueryExecutor
         return new QueryResult(columns, rows);
     }
 
+    /// <inheritdoc />
+    public async Task<QueryResult> QueryReadOnlyAsync(string sql, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
+
+        _logger.LogDebug("Executing model-supplied SQL (read-only): {Sql}", sql);
+
+        await using var connection = await _dataSource.OpenConnectionAsync(cancellationToken);
+
+        // The barrier that does not depend on parsing the statement correctly. Postgres will
+        // reject any write inside this transaction, whatever the text turned out to be.
+        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await using (var readOnly = new NpgsqlCommand("set transaction read only", connection, transaction))
+        {
+            await readOnly.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await using var command = new NpgsqlCommand(sql, connection, transaction);
+        command.CommandTimeout = _options.CommandTimeoutSeconds;
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var result = await ReadAllAsync(reader, cancellationToken);
+
+        await reader.CloseAsync();
+        await transaction.RollbackAsync(cancellationToken);
+
+        _logger.LogDebug("Model-supplied SQL returned {RowCount} row(s).", result.RowCount);
+        return result;
+    }
+
+    private static async Task<QueryResult> ReadAllAsync(NpgsqlDataReader reader, CancellationToken cancellationToken)
+    {
+        var columns = new string[reader.FieldCount];
+        for (var i = 0; i < reader.FieldCount; i++)
+        {
+            columns[i] = reader.GetName(i);
+        }
+
+        var rows = new List<IReadOnlyList<object?>>();
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var row = new object?[reader.FieldCount];
+            for (var i = 0; i < reader.FieldCount; i++)
+            {
+                row[i] = ReadValue(reader, i);
+            }
+
+            rows.Add(row);
+        }
+
+        return new QueryResult(columns, rows);
+    }
+
     /// <summary>
     /// Reads a single field, falling back to the raw PostgreSQL text representation for
     /// types Npgsql has no CLR mapping for (unmapped enums, domains, composites).

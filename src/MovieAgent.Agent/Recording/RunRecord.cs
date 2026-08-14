@@ -259,7 +259,12 @@ public sealed record GradeRecord
 
     [JsonPropertyName("required_tools_missing")] public IReadOnlyList<string> RequiredToolsMissing { get; init; } = [];
 
-    [JsonPropertyName("navigation_complete")] public bool NavigationComplete { get; init; }
+    /// <summary>
+    /// Null when the surface has no notion of navigation — the <c>sql-shortcut</c> control, where
+    /// one generic tool answers everything. Null means "not applicable"; false would read as a
+    /// failure to reach a required tool, which is a different claim.
+    /// </summary>
+    [JsonPropertyName("navigation_complete")] public bool? NavigationComplete { get; init; }
 
     /// <summary>False for qualitative exhibits, which are excluded from accuracy denominators.</summary>
     [JsonPropertyName("scored")] public bool Scored { get; init; } = true;
@@ -287,31 +292,31 @@ public sealed record GradeRecord
     /// again on their own axis since that failure mode is harness-caused, not a model
     /// hallucination in the usual sense).
     /// </summary>
-    [JsonPropertyName("fabricated_argument_count")] public int FabricatedArgumentCount { get; init; }
+    [JsonPropertyName("fabricated_argument_count")] public int? FabricatedArgumentCount { get; init; }
 
     /// <summary>
     /// Fabricated values sent for an id parameter — the model asserting that a specific row
     /// exists. This is the hallucination the metric exists to catch, and the number to read.
     /// </summary>
-    [JsonPropertyName("fabricated_id_count")] public int FabricatedIdCount { get; init; }
+    [JsonPropertyName("fabricated_id_count")] public int? FabricatedIdCount { get; init; }
 
     /// <summary>
     /// Fabricated values sent for a search-term parameter. Usually not a fault: a model hunting
     /// for an entity that does not exist invents terms because that is what searching is.
     /// </summary>
-    [JsonPropertyName("fabricated_term_count")] public int FabricatedTermCount { get; init; }
+    [JsonPropertyName("fabricated_term_count")] public int? FabricatedTermCount { get; init; }
 
     /// <summary>The offending "iter N: tool.param=value" entries. Only the fabricated ones, not a full audit.</summary>
     [JsonPropertyName("fabricated_arguments")] public IReadOnlyList<string> FabricatedArguments { get; init; } = [];
 
     /// <summary>Fabricated arguments whose value matched <c>^call_\d+$</c> — a normalised call id read back as data.</summary>
-    [JsonPropertyName("call_id_as_argument_count")] public int CallIdAsArgumentCount { get; init; }
+    [JsonPropertyName("call_id_as_argument_count")] public int? CallIdAsArgumentCount { get; init; }
 
     /// <summary>Grounded but sent as the wrong JSON kind, e.g. <c>{"film_id":"3"}</c> where the tool declares an integer.</summary>
-    [JsonPropertyName("argument_type_mismatch_count")] public int ArgumentTypeMismatchCount { get; init; }
+    [JsonPropertyName("argument_type_mismatch_count")] public int? ArgumentTypeMismatchCount { get; init; }
 
     /// <summary>Calls that failed for a wrong parameter name or type, not a data reason.</summary>
-    [JsonPropertyName("schema_error_count")] public int SchemaErrorCount { get; init; }
+    [JsonPropertyName("schema_error_count")] public int? SchemaErrorCount { get; init; }
 
     [JsonPropertyName("schema_errors")] public IReadOnlyList<string> SchemaErrors { get; init; } = [];
 }

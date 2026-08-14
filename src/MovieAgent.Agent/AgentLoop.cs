@@ -38,6 +38,8 @@ public sealed class AgentLoop(
         var startedAt = DateTimeOffset.UtcNow;
         var runStopwatch = Stopwatch.StartNew();
 
+        // Initialises the options used to configure the chat client
+        // The tools it has available, temperature, reasoning, seed and max output
         var chatOptions = new ChatOptions
         {
             Tools = ToolDeclarationFactory.CreateFor(surface),
@@ -48,6 +50,7 @@ public sealed class AgentLoop(
             MaxOutputTokens = options.Value.MaxOutputTokens,
         };
 
+        // Agent starts the loop with the system prompt and the question
         var messages = new List<ChatMessage>
         {
             new(ChatRole.System, request.SystemPrompt),
@@ -68,6 +71,7 @@ public sealed class AgentLoop(
 
         try
         {
+            // Agent has a maximum number of iterations it can make to answer the question.
             for (var iteration = 1; iteration <= options.Value.MaxIterations; iteration++)
             {
                 var turnStopwatch = Stopwatch.StartNew();
@@ -86,8 +90,9 @@ public sealed class AgentLoop(
                     }
                 }
 
+                // Check for reasoning text coming back if we've wanted it turned off
+                // Some models don't honour the think=false flag
                 var reasoningText = ExtractReasoningText(response);
-
                 if (!options.Value.Thinking && !string.IsNullOrWhiteSpace(reasoningText))
                 {
                     // Ollama's think=false is a request, not a guarantee — some models (qwen3

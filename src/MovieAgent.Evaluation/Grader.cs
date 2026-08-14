@@ -9,10 +9,6 @@ namespace MovieAgent.Evaluation;
 /// Deterministic grading of a free-text answer.
 /// </summary>
 /// <remarks>
-/// JUDGEMENT CALL, AND THE WEAKEST PART OF THE HARNESS. Grading natural language against a
-/// reference value is genuinely hard, and this is the cheap version: normalise, then look for
-/// the expected value inside the answer. It is deliberately lenient about surrounding prose
-/// and strict about the value itself.
 /// <para>
 /// Known ways it will be wrong, in rough order of how often you should expect them:
 /// </para>
@@ -44,9 +40,22 @@ public static partial class Grader
     private const string Inability =
         @"(?:cannot|can not|could not|unable|not able|do not have|does not have|did not|does not|do not)";
 
-    public static GradeRecord Grade(EvalQuestion question, RunRecord run, IReadOnlyList<string> surfaceToolNames)
+    /// <param name="genericSql">
+    /// True on the <c>sql-shortcut</c> control surface. Changes the shape of the grade rather than
+    /// its strictness: <c>requires_tools</c> names tools that do not exist there, so the
+    /// surface-relative decline rule would mark every question unanswerable, and navigation and
+    /// argument provenance have no meaning with one generic tool. Those fields come back null.
+    /// Answer correctness is graded identically.
+    /// </param>
+    public static GradeRecord Grade(
+        EvalQuestion question,
+        RunRecord run,
+        IReadOnlyList<string> surfaceToolNames,
+        bool genericSql = false)
     {
-        var shouldDecline = question.ShouldDeclineOn(surfaceToolNames);
+        var shouldDecline = genericSql
+            ? string.Equals(question.ExpectedBehaviour, "decline", StringComparison.OrdinalIgnoreCase)
+            : question.ShouldDeclineOn(surfaceToolNames);
         var expectedBehaviour = shouldDecline ? "decline" : "answer";
 
         // A tool counts as reached only if it ran without error. A call rejected for a bad
@@ -93,24 +102,29 @@ public static partial class Grader
         var answerTruncated = run.Iterations.Count > 0
             && string.Equals(run.Iterations[^1].FinishReason, "length", StringComparison.OrdinalIgnoreCase);
 
-        GradeRecord WithNavigation(GradeRecord grade) => grade with
-        {
-            RequiredTools = [.. question.RequiresTools.Select(g => string.Join(" or ", g))],
-            RequiredToolsMissing = missing,
-            NavigationComplete = missing.Length == 0,
-            Scored = question.Scored,
-            TruncationSeen = truncation is not null,
-            TruncationStatedTotal = truncation?.TotalRows,
-            AnswerMatchesStatedTotal = answerMatchesTruncation,
-            FabricatedArgumentCount = diagnostics.FabricatedArgumentCount,
-            FabricatedIdCount = diagnostics.FabricatedIdCount,
-            FabricatedTermCount = diagnostics.FabricatedTermCount,
-            FabricatedArguments = diagnostics.FabricatedArguments,
-            CallIdAsArgumentCount = diagnostics.CallIdAsArgumentCount,
-            ArgumentTypeMismatchCount = diagnostics.ArgumentTypeMismatchCount,
-            SchemaErrorCount = diagnostics.SchemaErrorCount,
-            SchemaErrors = diagnostics.SchemaErrors,
-        };
+        // On the generic-SQL control every one of these is either meaningless or actively
+        // misleading, so they are left null/empty rather than filled with zeros. A zero in
+        // "fabricated arguments" reads as a clean run; the truth is the question was not asked.
+        GradeRecord WithNavigation(GradeRecord grade) => genericSql
+            ? grade with { Scored = question.Scored }
+            : grade with
+            {
+                RequiredTools = [.. question.RequiresTools.Select(g => string.Join(" or ", g))],
+                RequiredToolsMissing = missing,
+                NavigationComplete = missing.Length == 0,
+                Scored = question.Scored,
+                TruncationSeen = truncation is not null,
+                TruncationStatedTotal = truncation?.TotalRows,
+                AnswerMatchesStatedTotal = answerMatchesTruncation,
+                FabricatedArgumentCount = diagnostics.FabricatedArgumentCount,
+                FabricatedIdCount = diagnostics.FabricatedIdCount,
+                FabricatedTermCount = diagnostics.FabricatedTermCount,
+                FabricatedArguments = diagnostics.FabricatedArguments,
+                CallIdAsArgumentCount = diagnostics.CallIdAsArgumentCount,
+                ArgumentTypeMismatchCount = diagnostics.ArgumentTypeMismatchCount,
+                SchemaErrorCount = diagnostics.SchemaErrorCount,
+                SchemaErrors = diagnostics.SchemaErrors,
+            };
 
         // A run that never produced an answer cannot be graded as a refusal: hitting the cap
         // or erroring is a different failure from correctly declining, and conflating them

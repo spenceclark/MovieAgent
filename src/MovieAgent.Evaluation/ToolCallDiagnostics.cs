@@ -107,7 +107,7 @@ public static partial class ToolCallDiagnostics
                         .Select(x => StripRowCount(x.Call.ResultText)),
                 ]);
 
-            ToolCatalogue.ByName.TryGetValue(call.ToolName, out var tool);
+            ToolLookup.ByName.TryGetValue(call.ToolName, out var tool);
 
             JsonDocument document;
             try

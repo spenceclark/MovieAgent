@@ -11,7 +11,12 @@ client now retries 429/5xx with backoff, which changes resilience, not output.
 
 **phi4-mini** was added later still, and **deepseek-r1:8b was re-run** at a higher token cap. Both
 used `Repeats=1` and `MaxOutputTokens` 6000, so their run *counts* are out of 21 rather than 42 —
-rates are comparable, totals are not. That brings the set to **27 models, 25 with run files**.
+rates are comparable, totals are not.
+
+**`qwen2.5:1.5b` and `mistral` were finally run too**, on the same config as the rest of the main
+sweep. They had been carried as "Hard Fail — didn't call tools" with no run file, which is a label
+rather than a measurement. Running them confirmed one and refuted the other — see section 3. That
+brings the set to **27 models, all 27 with run files**.
 
 All 968 runs were then regraded under grader `deterministic-substring-v3`, which makes two changes:
 fabricated arguments are split into invented row ids versus invented search terms, and an answer
@@ -36,7 +41,7 @@ figures below come from the regraded files.
 Corrected in the sheet, highlighted yellow with a cell comment. Every other value in that row —
 and every value in the other 21 rows — matched to the decimal.
 
-A `Notes` column (AJ) is populated for all 27 rows including the two hard fails. The sheet also
+A `Notes` column (AJ) is populated for all 27 rows. The sheet also
 gains a **`Strict`** column (L, next to `Correct`) and the fabrication column is now split into
 **`Fab. ID`** and **`Fab. Term`** (U and V). Backups: `LlmMoveiAgentResults.backup.xlsx` is the
 original as received, `LlmMoveiAgentResults.prev-v2.xlsx` the pre-split version.
@@ -111,13 +116,15 @@ to GPT-4o and gpt-5.4 on that axis.
 
 ## 3. Losers
 
-Eight of the twenty-five models that produced a run file scored **at most one correctly-navigated
-answer**. Their entire score is refusals:
+Ten of the twenty-seven models scored **at most one correctly-navigated answer**. Their entire
+score is refusals or luck:
 
 | Model | Strict | Genuine answers | What actually happened |
 |---|---|---|---|
+| qwen2.5:1.5b | 0 | 0 /34 | Calls tools rarely (15 in 42 runs) and never chains; both passes are unnavigated guesses |
 | deepseek-r1:8b | 1 | 0 /34 | Zero tool calls; describes calls in prose and invents tool names |
 | phi4-mini | 1 | 0 /17 | Zero tool calls; emits correct tool-call JSON into the content channel |
+| mistral | 2 | 0 /34 | Zero tool calls; writes pseudo-code calls in markdown fences |
 | granite3.3:8b | 3 | 0 /34 | Printed tool calls as prose; never used the tool channel |
 | llama3.1:8b | 4 | 1 /34 | Spammed fabricated IDs, 58% of calls errored |
 | llama3.2:3b | 4 | 0 /34 | One call per run, then stops. Never chains |
@@ -127,9 +134,9 @@ answer**. Their entire score is refusals:
 
 phi4-mini ran at `Repeats=1`, so its denominators are 21 runs / 17 answerable rather than 42 / 34.
 
-**Four of these are hard fails, not low scorers**, and belong with qwen2.5:1.5b and mistral. All
-four were wire-checked to rule out a harness fault, and in all four **25 tool definitions were sent
-in correct Ollama format** and none were called:
+**Five of these are hard fails, not low scorers.** All five were wire-checked to rule out a harness
+fault, and in all five **25 tool definitions were sent in correct Ollama format** and none were
+called:
 
 - **granite3.3:8b** — zero real tool calls in all 42 runs. Emits tool calls as text,
   `<|tool call{"name": "search_film", ...}|>` and fenced JSON blocks, in 17 runs. The model
@@ -137,7 +144,37 @@ in correct Ollama format** and none were called:
 - **command-r7b** — zero tool calls in all 42 runs; refuses almost everything instead.
 - **deepseek-r1:8b** — zero tool calls in 42 runs at a 2500-token cap *and* in a further 21 runs
   at 6000. See the retest below: the cap was hiding this failure, not causing it.
-- **phi4-mini** — zero tool calls in 21 runs, and the narrowest miss of the four. See below.
+- **phi4-mini** — zero tool calls in 21 runs, and the narrowest miss of the group. See below.
+- **mistral** — zero tool calls in all 42 runs. 31 of them write pseudo-code calls inside markdown
+  fences, ` ```search_film(title_contains="alamo videotape")``` `, then continue as though the call
+  had run, prefaced with "Assuming…". Both its correct answers are genuine refusals on
+  `unreachable-total-film-count`; it genuinely answered 0 of 34.
+
+### The two labels that were never measured
+
+`qwen2.5:1.5b` and `mistral` sat in the sheet as "Hard Fail — didn't call tools" with no run file
+behind them. Running them was cheap and it **corrected one of the two**:
+
+| | Label | Reality |
+|---|---|---|
+| `mistral` | didn't call tools | **Confirmed.** 0 tool calls in 42 runs, wire-checked |
+| `qwen2.5:1.5b` | didn't call tools | **Wrong.** 15 tool calls across 42 runs, 11 successful |
+
+qwen2.5:1.5b is not a tool-channel failure. It uses the channel, just rarely — 28 of 42 runs make
+no call, and the calls it does make are mostly well-formed (`search_film("AGENT TRUMAN")` returns
+the right row). What defeats it is everything after: it does not chain, it invents ids, and in 10
+of 42 runs it prints the tool *declaration schema* back as prose —
+`{"type": "function", "function": {search…` — echoing the shape it was offered rather than issuing
+a call.
+
+Its two "correct" are the most instructive false positive in the corpus. Both are
+`nearmiss-film-language`, answered with **zero tool calls**, guessing "English" from priors — and
+the expected answer is English, so substring matching passed it. It even appends the non-sequitur
+"ERROR: The query returned no results." to its own answer. Strict scoring catches both: **2 raw,
+0 strict, 0 of 34 genuinely answered.**
+
+The general lesson is the one this report keeps arriving at: a label is not a measurement. Two
+models were carried for the whole sweep on an assertion, and half of it was wrong.
 
 ### phi4-mini: the right payload in the wrong channel
 
@@ -440,10 +477,16 @@ tool emits a hint telling the model to retry. That is a reasonable rule, but it 
 a rubric decision rather than presented as a capability gap, because it is scoring an interaction
 style.
 
-**8. Hard-fail classification is inconsistent.** qwen2.5:1.5b and mistral are marked "Hard Fail —
-didn't call tools" with no run file. granite3.3 and command-r7b did exactly the same thing — zero
-tool calls in 42 runs, wire-confirmed — but produced answer-shaped prose, so they got scored and now
-sit mid-table on refusal credit alone. Same behaviour, different treatment.
+**8. Hard-fail classification was inconsistent, and one of the labels was simply wrong.** For most
+of this analysis qwen2.5:1.5b and mistral were carried as "Hard Fail — didn't call tools" with no
+run file, while granite3.3 and command-r7b did the same thing — zero tool calls, wire-confirmed —
+and were scored, landing mid-table on refusal credit alone. Same behaviour, different treatment.
+
+Both have now been run. mistral's label held; **qwen2.5:1.5b's did not** — it makes 15 tool calls
+across 42 runs. The class is now uniform (every model has a run file, all five zero-call models are
+scored and marked), but the general point stands and is worth stating plainly: **a model excluded
+on an unverified label is a hole in the dataset shaped like a conclusion.** It cost two sweeps of
+about a minute each to close, and closing it changed one of the two answers.
 
 **9. Two duplicate full runs exist and are not referenced.** `runs-20260812-214734.jsonl` is a
 second complete ministral-3 sweep (identical 26/42 — a useful reproducibility datapoint that
@@ -496,3 +539,100 @@ Families: **chain** = the 10 v1 linear FK-resolution questions (hop2–hop5). **
 questions whose first search is designed to return NO ROWS. **fan-out** = 2 questions with genuine
 breadth. **trunc** = the 142-row truncation question. **decline** = 4 questions that should be
 refused on this surface. Counts are runs, not questions (2 repeats each).
+
+---
+
+## 7. The control: does the no-shortcuts constraint cause the failures?
+
+The premise of this whole harness is that a generic SQL surface destroys what is being measured —
+one join replaces a five-hop chain. That was asserted, never tested. This is the test.
+
+**Surface**: `sql-shortcut`, two tools. `get_schema` returns a static column/PK/FK listing;
+`execute_sql` runs one read-only SELECT and renders it through the same output contract and the
+same 20-row cap as the standard surface, so output shape is not a second variable.
+
+**Questions**: the 10 linear FK-resolution questions only (hop2–hop5, v1). Everything else is
+excluded in code, not by convention — near-miss recovery is about a search tool that does not
+exist here, and the decline questions are labelled unreachable *relative to a tool surface*, so
+`unreachable-total-film-count` becomes a one-line `count(*)` and grading a refusal as correct would
+mark the model wrong for being right. Selecting anything outside the chain family throws before the
+first model call.
+
+**Models**: the two that made zero structured tool calls, the two that made one call and stopped,
+one mid-tier, and one control already at ceiling. Same config as the main sweep.
+
+> **This is not a capability ranking.** Text-to-SQL has vastly more training data behind it than
+> agentic tool composition. A model scoring higher here shows the task changed, not that the model
+> is a better agent. The delta is the finding.
+
+### Results
+
+| Model | chain (main) /20 | sql-shortcut /20 | Δ | q /10 | calls/run | iters/run | SQL calls | SQL errors | **read schema first** |
+|---|---|---|---|---|---|---|---|---|---|
+| granite3.3:8b | 0 | 0 | — | 0 | 0.00 | 1.00 | 0 | 0 | — (no tool call at all, 20/20 runs) |
+| command-r7b | 0 | 0 | — | 0 | 0.00 | 1.00 | 0 | 0 | — (no tool call at all, 20/20 runs) |
+| llama3.2 | 0 | 0 | — | 0 | 1.00 | 2.00 | 20 | **20 (100%)** | **0/20** |
+| mistral-nemo:12b | 0 | **2** | **+2** | 1 | 1.00 | 2.00 | 14 | 10 (71%) | **0/14** |
+| gemma4:e4b | 18 | 18 | — | 9 | 3.40 | 4.40 | 48 | 18 (38%) | **20/20** |
+| qwen3.5:4b | 20 | 20 | — | 10 | 4.20 | 5.20 | 64 | 4 (6%) | **20/20** |
+
+### What it shows
+
+**The constraint is not what is causing the failures.** This is the headline, and it is the
+opposite of the comfortable result. Handing the four failing models a generic SQL tool moved the
+aggregate by two runs out of eighty. If the no-shortcuts surface were unfairly hard — if it were
+manufacturing failure through awkwardness rather than measuring it — removing it should have lifted
+them. It did not.
+
+**Prediction 1 confirmed: a shortcut is still a tool call.** granite3.3 and command-r7b made zero
+tool calls here, exactly as in 42 runs each on the main surface. Their failure has nothing to do
+with chain composition; they never reach the point where composition matters. Nothing about the
+tool surface can fix a model that will not use the tool channel.
+
+**Prediction 2 refuted: "one call then stop" did not become "one call is enough".** This was
+expected to improve sharply, and it barely moved. Look at the loop shape rather than the score:
+llama3.2 and mistral-nemo both sit at **exactly 1.00 tool calls and 2.00 iterations per run** — on
+this surface *and* on the main one. One call, then answer, regardless of what the call returned.
+The surface changed; the shape of the failure did not. mistral-nemo's +2 is the two runs where a
+single blind guess happened to be right.
+
+**The behavioural column is the sharpest result in the whole report.** Whether a model read the
+schema before writing SQL separates the two groups perfectly, with no overlap:
+
+```
+never read it   llama3.2      0/20 runs    →  100% of queries failed  →  0/20 correct
+                mistral-nemo  0/14 runs    →   71% of queries failed  →  2/20 correct
+always read it  gemma4:e4b   20/20 runs    →   38% of queries failed  → 18/20 correct
+                qwen3.5:4b   20/20 runs    →    6% of queries failed  → 20/20 correct
+```
+
+The models that skip it invent plural table names that do not exist — `films`, `actors`,
+`customers` — and columns on the wrong table. That is the main sweep's fabricated-argument
+instinct, unchanged, in a new costume: assert a name, do not check it. The models that read it
+first write joins that work. **The failing behaviour is not "cannot chain", it is "will not
+check".**
+
+**Errors are only useful to a model that reads them.** gemma4 hit 18 SQL errors in 48 calls and
+still scored 18/20, because it iterates: read the error, fix the query. llama3.2 hit 20 errors in
+20 calls and scored 0, because it never issues a second query. The database's feedback is identical
+in both cases; only one model is listening.
+
+**The control held.** qwen3.5:4b 20 → 20 and gemma4:e4b 18 → 18. Worth noting gemma4's flat score
+hides a moved failure: it fails `hop5-title-2025-renter` on the main surface and
+`hop4-inventory-store-city` on this one. Same total, different question.
+
+### What this does and does not license
+
+It does license the premise. The main sweep's chain scores (0, 0, 0, 0, 18, 20) and the shortcut
+scores (0, 0, 0, 2, 18, 20) agree almost exactly, which means the chain metric is tracking tool-use
+competence rather than an artefact of a deliberately awkward surface.
+
+It does not license reading the shortcut column as a capability score, for the reason in the
+caveat above — and note that the models which *did* well here were already doing well on chains, so
+this data cannot separate "good at SQL" from "good at tool use" for them. The only clean
+observation is the negative one: **the shortcut rescued nobody.**
+
+Two caveats on the run itself. The brief named five models and listed six; all six were run. And
+`llama3.2:3b` is not a pulled Ollama tag — the first attempt returned 404 on every run, recorded as
+20 `Errored` runs, and was re-run against `llama3.2`, which is the tag the main sweep used. The
+errored file was discarded, not reported.

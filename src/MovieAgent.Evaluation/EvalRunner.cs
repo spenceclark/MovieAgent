@@ -51,6 +51,12 @@ public sealed class EvalRunner
             throw new InvalidOperationException($"No question id matches '{questionIdFilter}'.");
         }
 
+        // Fail before the first model call, not after a sweep that produced invalid labels.
+        if (surface.GenericSql)
+        {
+            SqlShortcutRun.EnsureAllowed(questions);
+        }
+
         _logger.LogInformation(
             "Eval set {EvalSet}: {Questions} question(s) x {Repeats} repeat(s) on surface '{Surface}' with {Model} (thinking {Thinking}).",
             evalSet.EvalSetId,
@@ -80,7 +86,7 @@ public sealed class EvalRunner
                     model,
                     cancellationToken);
 
-                var grade = Grader.Grade(question, run, surface.ToolNames);
+                var grade = Grader.Grade(question, run, surface.ToolNames, surface.GenericSql);
                 var recorded = run with { Grade = grade };
 
                 await _recorder.RecordAsync(recorded, cancellationToken);
@@ -105,7 +111,11 @@ public sealed class EvalRunner
             }
         }
 
-        return EvalSummary.From(evalSet.EvalSetId, surface.Name, model, _agentOptions.Thinking, graded);
+        var summary = EvalSummary.From(evalSet.EvalSetId, surface.Name, model, _agentOptions.Thinking, graded);
+
+        return surface.GenericSql
+            ? summary with { SqlShortcut = SqlShortcutRun.Summarise([.. graded.Select(g => g.Run)]) }
+            : summary;
     }
 }
 
@@ -134,6 +144,12 @@ public sealed record EvalSummary(
     IReadOnlyList<HopAccuracy> ByHopDepth,
     RefusalAccuracy Refusals)
 {
+    /// <summary>
+    /// Set only on the <c>sql-shortcut</c> control surface, where hop depth, navigation and
+    /// argument provenance are undefined. When this is present, read it instead of them.
+    /// </summary>
+    public SqlShortcutStats? SqlShortcut { get; init; }
+
     public static EvalSummary From(
         string evalSetId,
         string surface,
@@ -180,8 +196,14 @@ public sealed record EvalSummary(
             // actually reached every required tool. Drops passes the model landed on by luck —
             // llama3.1 calling get_film(1) without searching, then being right because film 1
             // happens to be English. A decline needs no traversal, so it is exempt.
+            //
+            // Note `!= false`, not `== true`: NavigationComplete is null on a surface that has no
+            // notion of navigation (sql-shortcut). Requiring `== true` would score every one of
+            // those runs as unnavigated and report a strict zero for a model that answered
+            // everything — the same "null is not zero" trap this codebase keeps hitting. A pass is
+            // only dropped when navigation was measured AND failed.
             graded.Count(g => g.Run.Grade?.Correct == true
-                && (g.Run.Grade.ExpectedBehaviour != "answer" || g.Run.Grade.NavigationComplete == true)),
+                && (g.Run.Grade.ExpectedBehaviour != "answer" || g.Run.Grade.NavigationComplete != false)),
             graded.Count(g => g.Run.CapHit),
             graded.Count(g => g.Run.Outcome == RunOutcome.Errored),
             graded.Count(g => g.Run.Outcome == RunOutcome.EmptyAnswer),

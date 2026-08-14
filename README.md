@@ -13,6 +13,8 @@ cost, correct refusal on unanswerable questions, run-to-run variance.
 Any tool that resolves a relationship server-side destroys the thing being measured. So:
 
 - **No `execute_sql`, no `get_schema`.** These collapse any question to one or two calls.
+  Available on exactly one surface, `sql-shortcut`, which exists to *measure* that claim rather
+  than assert it — see [The control surface](#the-control-surface). Never on the measured surfaces.
 - **One table per tool.** Enforced by [ToolCatalogueValidator](src/MovieAgent.Agent/Tools/ToolCatalogueValidator.cs),
   which rejects any descriptor containing a join or a second `FROM`.
 - **Foreign keys are returned raw.** `get_film` returns `language_id = 1`, never `"English"`.
@@ -56,6 +58,32 @@ dotnet run --project src/MovieAgent -- check
 | `tools [surface]` | Print a surface exactly as the model will see it, schemas and SQL included. |
 | `ask "<question>"` | One ad-hoc question. Recorded, ungraded. |
 | `eval [id-filter]` | Run the eval set, grade it, append to the recorder. |
+| `sqlguard` | Exercise the `sql-shortcut` read-only guard, including the queries it must refuse. |
+| `report <file.jsonl>` | Render a recorded file as a markdown transcript — see below. |
+
+### Reading a run
+
+```bash
+dotnet run --project src/MovieAgent -- report runs/runs-20260812-231344.jsonl
+```
+
+Writes `runs-20260812-231344.report.md` alongside the input (or to a path given as the second
+argument). The JSONL stays the dataset; this is for reading it. Each run gets:
+
+1. **The question and the run's stats** — outcome, model, surface, iterations against the cap,
+   tool calls, tokens, elapsed, run id.
+2. **Every iteration** — finish reason, tokens, elapsed, content hash, any reasoning text (folded
+   into a `<details>` block, since it can run to thousands of characters), what the model said, and
+   then **every tool call** with its arguments, its result, rows returned, elapsed, and whether it
+   errored, repeated or was blocked.
+3. **The grading** — the answer given, pass/fail, what was expected, and the diagnostics.
+
+Fields a surface leaves undefined are omitted, not printed as zero: a `sql-shortcut` report has no
+navigation or argument-provenance rows, because with one generic tool those are undefined rather
+than zero, and a zero reads as a measured failure.
+
+Long values are clipped with a `… (+N chars)` marker rather than truncated silently. Reports land
+in `runs/`, which is gitignored, so they are never committed by accident.
 
 Everything is overridable by environment variable:
 
@@ -73,6 +101,41 @@ Three, selected by `Agent:ToolSurface`. Defined in [ToolSurfaces.cs](src/MovieAg
 | `standard` | 24 | Adds lookup tables and junction tools. The fixed control. |
 | `standard+desc` | 25 | Standard plus `search_film_description`. |
 | `enriched` | 29 | Standard plus the count tools. |
+| `sql-shortcut` | 2 | **The control.** `get_schema` and `execute_sql`. Chain questions only. |
+
+## The control surface
+
+The no-shortcuts constraint above is the premise of the whole harness, and it was asserted rather
+than measured. `sql-shortcut` measures it: two tools, `get_schema` and a read-only `execute_sql`,
+and the ten linear FK-resolution questions from v1. It separates two failures the main sweep
+conflates — **a model that cannot emit a structured tool call at all**, and **a model that can call
+one tool but cannot compose a chain across turns**. The first should fail here too, because
+`execute_sql` is still a tool call. The second should improve, because one call now suffices.
+
+> **A model scoring higher on `sql-shortcut` is not a better agent.** Text-to-SQL has vastly more
+> training data behind it than agentic tool composition. An improvement here shows that *the task
+> changed*. Read the delta against the same model's chain score, never the absolute number. The
+> `eval` output prints this caveat with every result on this surface, and the surface refuses to
+> run any question outside the chain family.
+
+Design notes, all deliberate:
+
+- The two tools live in `SqlShortcutCatalogue`, **not** `ToolCatalogue`, so `ToolCatalogueValidator`
+  keeps proving the main catalogue is join-free and one-table-per-tool. The validator now also
+  rejects any non-descriptor tool that turns up in the main catalogue, so the split cannot rot.
+- `execute_sql` is guarded twice: [`SqlShortcutGuard`](src/MovieAgent.Agent/Tools/SqlShortcutGuard.cs)
+  screens the text (single statement, `SELECT`/`WITH` only, no DDL/DML, no banned objects) and the
+  query then runs inside a Postgres `READ ONLY` transaction, which refuses a write regardless of
+  what the regex missed. Run `dotnet run --project src/MovieAgent -- sqlguard` to exercise both.
+- Database errors come back to the model verbatim and marked retryable — the opposite of the
+  descriptor path, where a SQL failure is a harness fault the model cannot fix. Here the model
+  wrote the query, so Postgres's complaint is legitimate feedback and acting on it is measured.
+- `get_schema` returns a static listing generated from the live database, not a live
+  `information_schema` query, because introspection is on the banned list and the ban applies to
+  the harness's own SQL too.
+- Grading changes shape, not strictness. `requires_tools` names tools that do not exist here, so
+  navigation, hop depth and argument provenance are recorded as **null, not zero** — zero reads as
+  a failure, and the truth is the question was not asked. Answer correctness is graded identically.
 
 Both variants differ from `standard` by exactly one thing, so any accuracy difference has one
 candidate cause rather than two.

@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using MovieAgent.Agent.Recording;
+using MovieAgent.Agent.Tools;
 
 namespace MovieAgent.Evaluation;
 
@@ -107,7 +108,13 @@ public sealed class Regrader
             var reclassified = effectiveOutcome != run.Outcome;
             var runForGrading = reclassified ? run with { Outcome = effectiveOutcome } : run;
 
-            var after = Grader.Grade(question, runForGrading, runForGrading.ToolNames);
+            // The surface's grading mode has to come from the run too, not from configuration:
+            // regrading a sql-shortcut file with the descriptor rules would find every
+            // requires_tools entry missing and mark all ten chain questions as declines.
+            var genericSql = ToolSurfaces.ByName.TryGetValue(run.ToolSurface, out var recordedSurface)
+                && recordedSurface.GenericSql;
+
+            var after = Grader.Grade(question, runForGrading, runForGrading.ToolNames, genericSql);
             regraded++;
 
             // Expected to be empty: the new diagnostic fields and the EmptyAnswer split are
