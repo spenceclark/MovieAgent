@@ -8,6 +8,22 @@ public sealed record ArgumentBindingResult(
     string? Error)
 {
     public bool Success => Error is null;
+
+    /// <summary>
+    /// The argument was rejected in a way that also rules out what the model appears to be
+    /// attempting, so the generic "retry with different arguments" hint would be misleading.
+    /// </summary>
+    /// <remarks>
+    /// Set only for a search term below the minimum length. Retrying with a <em>longer</em> term
+    /// is perfectly valid — near-miss recovery depends on it — but no value of any length makes
+    /// this tool list the whole table, and that is usually what a one-character or empty term is
+    /// reaching for. The generic hint told the model to try different arguments, which is exactly
+    /// what qwen3.5:9b then did: eight successive substring guesses ("an", "the", "man", "film",
+    /// "is", "ing", "er", "on") until the iteration cap ended the run. Telling it the truth about
+    /// what is and is not reachable is not making the question easier; it is removing a harness
+    /// artefact from the refusal measurement.
+    /// </remarks>
+    public bool GoalUnreachable { get; init; }
 }
 
 /// <summary>
@@ -52,16 +68,16 @@ public static class ToolArgumentBinder
                 continue;
             }
 
-            var (value, error) = parameter.Type switch
+            var (value, error, goalUnreachable) = parameter.Type switch
             {
                 ToolParameterType.Integer => CoerceInteger(tool, parameter, raw),
                 ToolParameterType.Text => CoerceText(tool, parameter, raw),
-                _ => (null, $"{tool.Name} has an unsupported parameter type for '{parameter.Name}'."),
+                _ => (null, $"{tool.Name} has an unsupported parameter type for '{parameter.Name}'.", false),
             };
 
             if (error is not null)
             {
-                return new(null, error);
+                return new(null, error) { GoalUnreachable = goalUnreachable };
             }
 
             values[parameter.Name] = value;
@@ -70,7 +86,7 @@ public static class ToolArgumentBinder
         return new(values, null);
     }
 
-    private static (object? Value, string? Error) CoerceInteger(ToolDescriptor tool, ToolParameter parameter, object raw)
+    private static (object? Value, string? Error, bool GoalUnreachable) CoerceInteger(ToolDescriptor tool, ToolParameter parameter, object raw)
     {
         var text = Stringify(raw);
 
@@ -86,42 +102,44 @@ public static class ToolArgumentBinder
             }
             else
             {
-                return (null, $"{tool.Name}: '{parameter.Name}' must be a whole number, but got '{text}'.");
+                return (null, $"{tool.Name}: '{parameter.Name}' must be a whole number, but got '{text}'.", false);
             }
         }
 
         if (parameter.Minimum is { } min && number < min)
         {
-            return (null, $"{tool.Name}: '{parameter.Name}' must be at least {min}, but got {number}.");
+            return (null, $"{tool.Name}: '{parameter.Name}' must be at least {min}, but got {number}.", false);
         }
 
         if (parameter.Maximum is { } max && number > max)
         {
             return (null,
                 $"{tool.Name}: '{parameter.Name}' must be at most {max}, but got {number}. " +
-                $"There is no such record.");
+                $"There is no such record.", false);
         }
 
-        return ((int)number, null);
+        return ((int)number, null, false);
     }
 
-    private static (object? Value, string? Error) CoerceText(ToolDescriptor tool, ToolParameter parameter, object raw)
+    private static (object? Value, string? Error, bool GoalUnreachable) CoerceText(ToolDescriptor tool, ToolParameter parameter, object raw)
     {
         var text = Stringify(raw).Trim();
 
         if (text.Length < parameter.MinLength)
         {
             return (null,
-                $"{tool.Name}: '{parameter.Name}' must be at least {parameter.MinLength} characters. " +
-                $"This tool will not list every row — give it something to search for.");
+                $"{tool.Name}: '{parameter.Name}' must be at least {parameter.MinLength} characters, " +
+                $"and no value of any length will make this tool list every row — it only finds rows " +
+                $"matching the text you give it.",
+                true);
         }
 
         if (text.Length > parameter.MaxLength)
         {
-            return (null, $"{tool.Name}: '{parameter.Name}' must be at most {parameter.MaxLength} characters.");
+            return (null, $"{tool.Name}: '{parameter.Name}' must be at most {parameter.MaxLength} characters.", false);
         }
 
-        return (text, null);
+        return (text, null, false);
     }
 
     private static bool IsJsonNull(object raw) =>

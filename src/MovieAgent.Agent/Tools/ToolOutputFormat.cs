@@ -28,8 +28,17 @@ public sealed record TruncationNotice(int TotalRows, int ShownRows);
 public static partial class ToolOutputFormat
 {
     /// <summary>Bump on any change to the emitted text. Recorded per run.</summary>
-    /// <remarks>1.1 added <see cref="RepeatedCallError"/>.</remarks>
-    public const string Version = "1.1";
+    /// <remarks>
+    /// 1.1 added <see cref="RepeatedCallError"/>.
+    /// <para>
+    /// 1.2 added <see cref="UnreachableGoalError"/> and rewrote the too-short-search-term message
+    /// to use it. Previously that rejection ended "You may retry this tool with different
+    /// arguments", which invited a model reaching for the whole table to keep guessing terms
+    /// instead of concluding the total was unreachable — a harness artefact sitting directly on
+    /// the refusal axis. Runs recorded at 1.1 are not comparable with 1.2 on the refusal metric.
+    /// </para>
+    /// </remarks>
+    public const string Version = "1.2";
 
     public const string Delimiter = " | ";
 
@@ -47,6 +56,11 @@ public static partial class ToolOutputFormat
     private const string TerminalHint =
         "This is a configuration fault in the harness, not a problem with your arguments. " +
         "Retrying will not help.";
+
+    private const string UnreachableGoalHint =
+        "You may retry with a longer, more specific search term. If what you need is every row, " +
+        "or a count of them, that is not reachable with the tools you have — say so rather than " +
+        "guessing terms.";
 
     /// <summary>Renders a successful result: header row, data rows, then a count line.</summary>
     public static string Rows(QueryResult result, int maxRows, string? emptyResultHint = null)
@@ -86,6 +100,26 @@ public static partial class ToolOutputFormat
     /// explicitly stops the model burning its iteration budget retrying.
     /// </summary>
     public static string TerminalError(string message) => $"ERROR: {message} {TerminalHint}";
+
+    /// <summary>
+    /// The argument was rejected, and the thing the model appears to be attempting is not
+    /// reachable on this surface — even though a differently-shaped call to the same tool is.
+    /// </summary>
+    /// <remarks>
+    /// Sits between the other two on purpose. <see cref="TerminalError"/> would be wrong: the
+    /// tool is fine and a longer search term works. <see cref="RetryableError"/> was what this
+    /// used to emit, and it was actively misleading — "you may retry this tool with different
+    /// arguments" appended to "this tool will not list every row" reads as an invitation to keep
+    /// guessing terms, and that is exactly what models did. qwen3.5:9b spent all ten iterations of
+    /// <c>unreachable-total-film-count</c> on eight successive substring guesses after being told
+    /// to try different arguments.
+    /// <para>
+    /// That matters because <c>unreachable-total-film-count</c> is a refusal question: the correct
+    /// answer is to say the total is not reachable. A hint that encourages more searching depresses
+    /// the refusal axis for harness reasons rather than model reasons.
+    /// </para>
+    /// </remarks>
+    public static string UnreachableGoalError(string message) => $"ERROR: {message} {UnreachableGoalHint}";
 
     /// <summary>
     /// The model has issued a call it already made, byte for byte.

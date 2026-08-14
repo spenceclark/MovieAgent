@@ -66,7 +66,11 @@ public sealed class ToolExecutor
         var binding = ToolArgumentBinder.Bind(tool, invocation.Arguments);
         if (!binding.Success)
         {
-            return Error(tool.Name, ToolOutputFormat.RetryableError(binding.Error!), isTerminal: false, stopwatch);
+            var text = binding.GoalUnreachable
+                ? ToolOutputFormat.UnreachableGoalError(binding.Error!)
+                : ToolOutputFormat.RetryableError(binding.Error!);
+
+            return Error(tool.Name, text, isTerminal: false, stopwatch);
         }
 
         if (tool.Kind == ToolKind.FreeSql)

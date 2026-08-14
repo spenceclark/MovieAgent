@@ -182,6 +182,35 @@ sets `Reasoning` from `AgentOptions.ToReasoningOptions()` explicitly rather than
 unset — otherwise `check` would silently validate a different reasoning configuration than
 `eval`/`ask` actually use, defeating the point of running it first.
 
+### Ollama and OpenAI are not sent the same tool output
+
+A second round-trip gap in the same adapter, found the same way. OllamaSharp serialises the whole
+`FunctionResultContent` into the tool message body, so a local model reads
+
+```
+{"CallId":"call_1","Result":"film_id | title\n11 | ALAMO VIDEOTAPE\n1 rows"}
+```
+
+— one line, newlines escaped — where the OpenAI SDK sends the same result as raw text with real
+newlines and the id in its own `tool_call_id` field. The frozen output contract above therefore
+reached hosted models intact and local models mangled. The assistant message also goes out with
+`"id": null`, so `Agent:NormaliseToolCallIds` never reaches the wire on that path.
+
+`Agent:RepairOllamaToolMessages` rewrites the outbound message to match the OpenAI shape. **Off by
+default**, because turning it on changes what the model is sent and so invalidates comparison
+against everything already recorded. Measured on three models, each against a repair-off control:
+gemma4:e4b is unaffected (identical score, per-hop split and calls per run); qwen3.5:4b moves
+32/42 → 30/42; qwen3.5:9b moves 38/42 → **40/42**. Both controls reproduced their baselines exactly,
+so those are causal. The consistent effect is *less persistence* — fewer calls, more willingness to
+decline — which costs 4b some deep chains and costs 9b nothing, because its answers were already at
+ceiling. Turn it on for new sweeps.
+
+`Agent:SendReasoningEffort` (default true) suppresses the reasoning-effort parameter entirely.
+gpt-4o and gpt-4o-mini reject it with `HTTP 400: Unrecognized request argument supplied:
+reasoning_effort` — effort is a reasoning-model parameter and they are not reasoning models. Note
+this is **not** a general "reasoning off" switch: on Ollama the same options object becomes `think`,
+and an absent `think` is not `think:false`, so a thinking model would fall back to its own default.
+
 ### `Agent:Thinking` does not give the model continuity of thought
 
 On Ollama, reasoning is **not carried between iterations** — each turn's `thinking` output is

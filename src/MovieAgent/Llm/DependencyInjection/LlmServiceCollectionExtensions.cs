@@ -53,6 +53,14 @@ public static class LlmServiceCollectionExtensions
             httpClient.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
         });
 
+        // Order matters: the repair runs first so wire capture records what Ollama actually
+        // receives, not what the adapter would have sent.
+        if (configuration.GetValue<bool>("Agent:RepairOllamaToolMessages"))
+        {
+            services.AddTransient<OllamaToolMessageRepairHandler>();
+            ollamaClient.AddHttpMessageHandler<OllamaToolMessageRepairHandler>();
+        }
+
         if (captureEnabled)
         {
             ollamaClient.AddHttpMessageHandler<WireCaptureHandler>();

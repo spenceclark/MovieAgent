@@ -205,6 +205,18 @@ public sealed record RunRecord
     /// </remarks>
     [JsonPropertyName("normalise_tool_call_ids")] public bool NormaliseToolCallIds { get; init; }
 
+    /// <summary>
+    /// Whether outbound Ollama tool messages were unwrapped for this run
+    /// (<see cref="AgentOptions.RepairOllamaToolMessages"/>). Null on providers where it does not apply.
+    /// </summary>
+    [JsonPropertyName("repair_ollama_tool_messages")] public bool? RepairOllamaToolMessages { get; init; }
+
+    /// <summary>
+    /// Whether a reasoning-effort parameter was sent at all
+    /// (<see cref="AgentOptions.SendReasoningEffort"/>). False for models whose API rejects it.
+    /// </summary>
+    [JsonPropertyName("send_reasoning_effort")] public bool? SendReasoningEffort { get; init; }
+
     /// <summary>Repeat index when the same question is run several times to measure variance.</summary>
     [JsonPropertyName("repeat")] public required int Repeat { get; init; }
 

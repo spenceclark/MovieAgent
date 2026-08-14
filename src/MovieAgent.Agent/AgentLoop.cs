@@ -236,6 +236,8 @@ public sealed class AgentLoop(
             Thinking = options.Value.Thinking,
             ReplayThinking = options.Value.ReplayThinking,
             NormaliseToolCallIds = options.Value.NormaliseToolCallIds,
+            RepairOllamaToolMessages = options.Value.RepairOllamaToolMessages,
+            SendReasoningEffort = options.Value.SendReasoningEffort,
             Repeat = request.Repeat,
             SystemPrompt = request.SystemPrompt,
             SystemPromptSha256 = Agent.SystemPrompt.Sha256(request.SystemPrompt),

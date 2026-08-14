@@ -8,3 +8,7 @@ appsettings.*.local.json
 
 # Recorded runs. This is the dataset — back it up deliberately, don't commit it by accident.
 runs/
+# Belt and braces: a regrade writes beside its input, and a relative path invoked from the
+# wrong directory drops one at the repo root where runs/ does not cover it.
+/*.jsonl
+*.regraded.jsonl

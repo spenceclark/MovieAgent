@@ -1,4 +1,16 @@
-# MovieAgent sweep: validation and analysis
+# MovieAgent sweep v1: validation and analysis
+
+> **The numbers here are superseded. See [RESULTS-ANALYSIS-2.md](RESULTS-ANALYSIS-2.md).**
+>
+> This analysis found two harness defects that were affecting the results it was analysing —
+> concern 9b (local and hosted models were sent different tool-output formats) and the retry hint on
+> a terminal condition, which sat directly on the refusal axis. Both are now fixed and 22 of the 27
+> models have been re-run under output-format contract 1.2.
+>
+> This document is kept because it is where those defects were found, and because its method —
+> the strict score, the question-family taxonomy, the `sql-shortcut` control, the concerns list —
+> carries forward unchanged. **Read it for how the harness was audited; read v2 for what the models
+> scored.** Its own figures are v1, at contract 1.1, and are not comparable with v2 on refusal.
 
 Analysis of the model sweep recorded in `LlmMoveiAgentResults.xlsx`, validated against the JSONL in
 `runs/`. Every number in the spreadsheet was recomputed from the recorded runs using the same
@@ -506,6 +518,66 @@ second complete ministral-3 sweep (identical 26/42 — a useful reproducibility 
 deserves to be in the sheet) and `runs-20260812-224854.jsonl` is the gpt-4o attempt that errored
 42/42 under rate limiting. The latter is worth keeping precisely because it is what a rate-limited
 run looks like in the data.
+
+**9b. Local and hosted models were not sent the same tool output.** Found by reading a wire
+capture, and the most serious methodological defect in the whole harness. The frozen output
+contract — pipe-delimited, header row, LF line endings, count line — reached the two providers
+differently:
+
+| | OpenAI `/v1/chat/completions` | Ollama `/api/chat` |
+|---|---|---|
+| tool message keys | `content`, `role`, **`tool_call_id`** | `content`, `role` |
+| content | `film_id \| title⏎11 \| ALAMO VIDEOTAPE⏎1 rows` | `{"CallId":"call_1","Result":"…\n…"}` |
+| real newlines | **2** | **0** |
+| assistant call id | `"id": "call_1"` | `"id": null` |
+
+OllamaSharp serialises the whole `FunctionResultContent` object into the message body, so every
+local model read the result table as **one line of escaped JSON** while every hosted model read the
+intended three-line table. It also drops the call id from the assistant message entirely, which
+means `NormaliseToolCallIds` never reached the wire on that path — the normalised id survives only
+inside the content blob.
+
+**Measured rather than assumed.** A repair handler (`Agent:RepairOllamaToolMessages`, off by
+default) rewrites the outbound message to match the OpenAI shape exactly. Three models were run in
+both arms, each with a repair-off control so the effect could be separated from run-to-run
+variance:
+
+| Model | repair off | repair on | control reproduced baseline? | change |
+|---|---|---|---|---|
+| gemma4:e4b | 26/42 | **26/42** | — | none: identical per-hop, per-refusal, calls/run |
+| qwen3.5:4b | 32/42 | **30/42** | yes, exactly | **−2** |
+| **qwen3.5:9b** | 38/42 | **40/42** | yes, 0 flips | **+2** |
+
+Calibrated against the noise floor: gpt-4o re-run on its own recorded configuration moved by
+**one run** (31 → 30, a single `decline-hard-director` repeat), which is the hosted variance to
+judge against. The 4b and 9b arms flipped six runs each. This is well above noise.
+
+**The mechanism is consistent and the net effect is not.** With clean tool output both qwen3.5
+models become *less persistent* — fewer calls, more willingness to decline:
+
+- **4b**: answers 30 → 26, declines 2 → 4, calls 208 → 188. Loses both repeats of
+  `hop5-title-2025-renter` and `nearmiss-film-language`, gains `unreachable-total-film-count`.
+- **9b**: answers 34 → **34** *(already at ceiling — nothing to lose)*, declines 4 → 6, calls
+  202 → 172. `decline-easy-category` alone drops from 17 calls to 10.
+
+Same shift; the sign of the net differs only by whether the model had answer headroom to give up.
+gemma4:e4b, which is far less persistent to begin with, did not move at all.
+
+What this does and does not undermine. **Local-versus-local comparisons are sound** — every Ollama
+run in the corpus had identical treatment. The **local-versus-hosted** comparison carries a real
+caveat: they were reading different formats. It does not weaken the headline; it strengthens it.
+The local models were reading the *worse* format, and repairing it moves qwen3.5:9b from 38 to
+**40/42**, closer to gpt-5.4's 42 rather than further away. **Any future sweep should turn it on**;
+it is off by default only so the existing corpus stays interpretable.
+
+**9c. One configuration was never recorded at all.** The gpt-4o and gpt-4o-mini rows were produced
+by hand-patching out the reasoning-effort parameter, because those models reject it
+(`HTTP 400: Unrecognized request argument supplied: reasoning_effort` — effort is a reasoning-model
+parameter and they are not reasoning models). That made two rows unreproducible from the repository
+and left nothing in their JSONL to say why. It is now `Agent:SendReasoningEffort`, recorded per run
+as `send_reasoning_effort`, and the gpt-4o re-run above used it. The general lesson is the same one
+as the call-id flag: **a run variable that is not recorded is a hole in the dataset**, and the way
+it surfaces is a re-run that inexplicably fails.
 
 **10. GPU offload varied between models.** mistral-nemo:12b ran at 0.73 and ministral at 0.92,
 everything else at 1.0. That affects latency comparisons but not correctness.
