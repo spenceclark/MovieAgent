@@ -1,3 +1,7 @@
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
+
 namespace MovieAgent.Agent.Tools;
 
 /// <summary>A named subset of <see cref="ToolCatalogue.All"/>. The experimental variable.</summary>
@@ -20,6 +24,58 @@ public sealed record ToolSurface(string Name, IReadOnlyList<string> ToolNames)
         [.. ToolNames.Select(n => ToolLookup.ByName.TryGetValue(n, out var d)
             ? d
             : throw new InvalidOperationException($"Surface '{Name}' names unknown tool '{n}'."))];
+
+    /// <summary>
+    /// A hash of everything about this surface the model actually sees: tool names, descriptions,
+    /// and every parameter's name, type, description, bounds and required flag.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Recorded per run because tool descriptions and schemas are prompt text — a run variable,
+    /// exactly like <see cref="SystemPrompt"/>, which is already recorded and hashed. Before this,
+    /// only tool <em>names</em> were recorded, so tightening a bound or rewording a parameter
+    /// description left no evidence in historical JSONL.
+    /// </para>
+    /// <para>
+    /// It matters most for regrading. Argument provenance and schema-enumeration classification
+    /// are computed against the <em>current</em> catalogue, so regrading an old run can describe
+    /// a schema the model never saw. Comparing this hash is how that gets caught rather than
+    /// silently believed.
+    /// </para>
+    /// <para>
+    /// Deliberately excludes <c>Sql</c>, <c>Table</c> and <c>MaxRows</c>: they change what a tool
+    /// returns but are never shown to the model, and folding them in would make the hash change
+    /// for reasons that have nothing to do with what the model read.
+    /// </para>
+    /// </remarks>
+    public string SchemaSha256()
+    {
+        // Unit separator. Any character that cannot occur in a name or description will do; the
+        // point is that "ab" + "c" and "a" + "bc" must not produce the same hash.
+        const char Sep = '';
+
+        var canonical = new StringBuilder();
+        foreach (var tool in Resolve().OrderBy(t => t.Name, StringComparer.Ordinal))
+        {
+            canonical.Append(tool.Name).Append(Sep).Append(tool.Description).Append(Sep);
+
+            // Parameter order is part of what the model is shown, so it is not sorted.
+            foreach (var p in tool.Parameters)
+            {
+                canonical.Append(p.Name).Append(Sep)
+                    .Append(p.Type).Append(Sep)
+                    .Append(p.Description).Append(Sep)
+                    .Append(p.Required).Append(Sep)
+                    .Append(p.Minimum?.ToString(CultureInfo.InvariantCulture) ?? "-").Append(Sep)
+                    .Append(p.Maximum?.ToString(CultureInfo.InvariantCulture) ?? "-").Append(Sep)
+                    .Append(p.MinLength.ToString(CultureInfo.InvariantCulture)).Append(Sep);
+            }
+
+            canonical.Append(Sep);
+        }
+
+        return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(canonical.ToString())));
+    }
 }
 
 /// <summary>

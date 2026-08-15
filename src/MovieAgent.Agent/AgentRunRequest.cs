@@ -13,5 +13,9 @@ public sealed record AgentRunRequest
     /// <summary>Overrides <see cref="AgentOptions.ToolSurface"/> when set.</summary>
     public string? ToolSurfaceName { get; init; }
 
-    public string SystemPrompt { get; init; } = Agent.SystemPrompt.Default;
+    /// <summary>
+    /// The prompt must be selected for the run's tool surface. Required so a new caller cannot
+    /// silently pair the SQL surface with the one-table prompt (or vice versa).
+    /// </summary>
+    public required string SystemPrompt { get; init; }
 }

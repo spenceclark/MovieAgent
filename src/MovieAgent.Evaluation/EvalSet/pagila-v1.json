@@ -201,7 +201,7 @@
     {
       "id": "hop5-title-2025-renter",
       "question": "Who rented the film ELIZABETH SHANE during 2025?",
-      "expected_hops": 5,
+      "expected_hops": 4,
       "expected_behaviour": "answer",
       "expected_answer": "BETTY MILLER",
       "answer_kind": "exact",
@@ -220,7 +220,7 @@
           "get_customer"
         ]
       ],
-      "note": "The deepest chain in the set: title search -> inventory -> rentals -> filter to 2025 -> customer. Seeded from the title, not the description, deliberately: title match is exact and unique, so the fan-out at hop 1 is 1 and the run measures planning rather than search luck. Film 279 has 2 copies and 23 rentals all time, of which exactly 1 falls in 2025, so the answer is single-valued. Max 12 rentals per copy, under the 30-row cap, so no truncation confound."
+      "note": "Four sequential tool calls -- title search -> inventory -> rentals -> customer -- plus a year filter the model applies itself to rentals it already holds. expected_hops counts tool-call depth only, per the convention stated in pagila-v2.json, so the filter is not a hop; it was labelled 5 until 2026-08-15, which made the hop-5 bucket half four-hop data. Seeded from the title, not the description, deliberately: title match is exact and unique, so the fan-out at hop 1 is 1 and the run measures planning rather than search luck. Film 279 has 2 copies and 23 rentals all time, of which exactly 1 falls in 2025, so the answer is single-valued. Max 12 rentals per copy, under the 30-row cap, so no truncation confound."
     },
     {
       "id": "ambiguous-sumo-2025-renter",

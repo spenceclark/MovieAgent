@@ -37,8 +37,13 @@ public static partial class ToolOutputFormat
     /// instead of concluding the total was unreachable — a harness artefact sitting directly on
     /// the refusal axis. Runs recorded at 1.1 are not comparable with 1.2 on the refusal metric.
     /// </para>
+    /// <para>
+    /// 1.3 added <see cref="ToolBudgetExhaustedError"/>, which a run only ever sees if it spends
+    /// its whole tool-call budget. It says the budget is gone and cannot be retried, so it sits on
+    /// the refusal axis too — but only for runs that reach it, unlike 1.2's change.
+    /// </para>
     /// </remarks>
-    public const string Version = "1.2";
+    public const string Version = "1.3";
 
     public const string Delimiter = " | ";
 
@@ -134,6 +139,31 @@ public static partial class ToolOutputFormat
         $"ERROR: you have already called {toolName} with {argumentsRaw} and it returned {previousOutcome}. " +
         "The database has not changed, so this call will keep returning the same thing. " +
         "Do not repeat it. Either use different arguments, use a different tool, or answer with what you have.";
+
+    /// <summary>
+    /// The run has spent its whole tool-call budget. Terminal for tools, not for the run.
+    /// </summary>
+    /// <remarks>
+    /// The budget is not stated in the system prompt, deliberately: telling a model up front how
+    /// many calls it has hands it a ready-made reason to decline, and refusal is a headline axis.
+    /// So the first the model hears of it is here, and the wording has to do two things at once —
+    /// close off retrying, and not present giving up as the expected response. It names what the
+    /// model can still do, in the same shape as <see cref="RepeatedCallError"/>.
+    /// </remarks>
+    public static string ToolBudgetExhaustedError(int budget) =>
+        $"ERROR: no tool calls remain — this run allows {budget} and all of them are spent. " +
+        "Retrying will not return one. Answer the question with what the results so far give you, " +
+        "and if they are not enough, say specifically what is still missing.";
+
+    /// <summary>
+    /// The short form, for the second and subsequent refusals in the same turn.
+    /// </summary>
+    /// <remarks>
+    /// The protocol needs a result for every call the model made, so a turn emitting 123 calls
+    /// gets 123 results. Sending the full message each time put ~3,000 tokens of identical text
+    /// into the next turn's context, which is the opposite of helping it recover.
+    /// </remarks>
+    public const string ToolBudgetExhaustedRepeat = "ERROR: no tool calls remain. See the first result in this batch.";
 
     /// <summary>
     /// Reads the count line back out of a tool result, if it truncated.

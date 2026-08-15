@@ -90,7 +90,12 @@ public static class RunReport
         var first = runs[0];
         var models = runs.Select(r => r.Model).Distinct().Order().ToArray();
         var surfaces = runs.Select(r => r.ToolSurface).Distinct().Order().ToArray();
-        var graded = runs.Where(r => r.Grade is not null && r.Grade.Scored).ToArray();
+        // Same denominator rule as EvalSummary: unscored exhibits and errored runs are out. A
+        // transport failure is not a wrong answer, and counting it as one understates the model.
+        var graded = runs
+            .Where(r => r.Grade is not null && r.Grade.Scored && r.Outcome != RunOutcome.Errored)
+            .ToArray();
+        var errored = runs.Count(r => r.Outcome == RunOutcome.Errored);
         var scoredCorrect = graded.Count(r => r.Grade!.Correct);
 
         md.Append("| | |\n|---|---|\n");
@@ -101,7 +106,8 @@ public static class RunReport
         Row(md, "questions", runs.Select(r => r.QuestionId).Distinct().Count().ToString(CultureInfo.InvariantCulture));
         if (graded.Length > 0)
         {
-            Row(md, "correct", $"{scoredCorrect}/{graded.Length} scored run(s)");
+            Row(md, "correct", $"{scoredCorrect}/{graded.Length} scored run(s)"
+                + (errored > 0 ? $" — {errored} errored run(s) excluded" : string.Empty));
         }
 
         Row(md, "outcomes", string.Join(", ", runs.GroupBy(r => r.Outcome)
@@ -117,10 +123,21 @@ public static class RunReport
         Row(md, "config", $"seed {first.Seed?.ToString(CultureInfo.InvariantCulture) ?? "-"}, "
             + $"temp {first.Temperature?.ToString(CultureInfo.InvariantCulture) ?? "-"}, "
             + $"max iterations {first.MaxIterations}, "
+            + $"max tool calls {first.MaxToolCalls?.ToString(CultureInfo.InvariantCulture) ?? "unbudgeted"}, "
             + $"max output tokens {first.MaxOutputTokens?.ToString(CultureInfo.InvariantCulture) ?? "uncapped"}, "
             + $"thinking {(first.Thinking ? "on" : "off")}");
         Row(md, "output format", first.OutputFormatVersion);
         Row(md, "system prompt", "`" + first.SystemPromptSha256[..12] + "`");
+        if (first.ToolSchemaSha256 is { Length: > 12 } schemaHash)
+        {
+            Row(md, "tool schema", "`" + schemaHash[..12] + "`");
+        }
+
+        var budgetHits = runs.Count(r => r.ToolBudgetHit == true);
+        if (budgetHits > 0)
+        {
+            Row(md, "tool budget spent", $"{budgetHits} run(s) asked for a call after the budget ran out");
+        }
         md.Append('\n');
 
         md.Append("## Contents\n\n");
@@ -257,6 +274,20 @@ public static class RunReport
         md.Append("**Answer given:**\n\n```\n")
           .Append(string.IsNullOrWhiteSpace(run.FinalAnswer) ? "(no final answer)" : Block(run.FinalAnswer))
           .Append("\n```\n\n");
+
+        // A thinking model can put the whole answer in the reasoning channel and emit no visible
+        // text, which grades as EmptyAnswer. The reasoning is already shown per iteration, but it
+        // is collapsed and a long way from the verdict, so repeat the last turn's here. Graders
+        // never see this text — it is shown so a FAIL that is really a channel problem is legible
+        // as one.
+        if (string.IsNullOrWhiteSpace(run.FinalAnswer)
+            && run.Iterations.Count > 0
+            && run.Iterations[^1].ReasoningText is { } trailing
+            && !string.IsNullOrWhiteSpace(trailing))
+        {
+            md.Append("**Reasoning on the final turn** (not graded — the model emitted no visible text):\n\n```\n")
+              .Append(Block(trailing)).Append("\n```\n\n");
+        }
 
         md.Append("| | |\n|---|---|\n");
         Row(md, "result", grade.Correct ? "**PASS**" : "**FAIL**");

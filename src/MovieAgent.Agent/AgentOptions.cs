@@ -14,7 +14,44 @@ public sealed class AgentOptions : IValidatableOptions
     /// </summary>
     public int MaxIterations { get; set; } = 10;
 
-    /// <summary>Which surface to advertise. One of minimal, standard, enriched.</summary>
+    /// <summary>
+    /// Hard cap on tool calls per run, counting repeats and calls the harness blocks. The call
+    /// after it is exhausted returns
+    /// <see cref="Tools.ToolOutputFormat.ToolBudgetExhaustedError"/> rather than terminating the
+    /// run, so the model still gets to answer or say what is missing with what it has.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Until this existed <see cref="MaxIterations"/> was the budget, which meant a model calling
+    /// one tool per turn got <c>MaxIterations - 1</c> calls while one batching several per turn
+    /// got as many as it liked. Measured across the v2 sweep: 9 runs passed only because they
+    /// batched past a budget that bound everyone else, 4 of them in a single model on the two
+    /// questions its headline numbers came from.
+    /// </para>
+    /// <para>
+    /// Repeats count deliberately. The model is told on every blocked repeat not to issue it
+    /// again; a budget on distinct calls would make ignoring that free, and two models spend
+    /// ~40% of their calls on byte-identical repeats.
+    /// </para>
+    /// </remarks>
+    public int MaxToolCalls { get; set; } = 15;
+
+    /// <summary>
+    /// Run with the sentence "Declining when the data is not reachable is a correct answer"
+    /// removed from the system prompt, and nothing else changed.
+    /// </summary>
+    /// <remarks>
+    /// A control, not a setting to sweep with. The main results are recorded with the sentence in
+    /// place; this exists to measure how much of the refusal behaviour that one line is carrying,
+    /// because without it the refusal numbers can only be described as instruction-following. The
+    /// prompt hash changes, so the two populations stay distinguishable in the recorded data.
+    /// </remarks>
+    public bool OmitDeclineCredit { get; set; }
+
+    /// <summary>
+    /// Which surface to advertise. Valid names are defined by
+    /// <see cref="Tools.ToolSurfaces.ByName"/>; prompt selection must use the same surface.
+    /// </summary>
     public string ToolSurface { get; set; } = "standard";
 
     /// <summary>Fixed seed makes runs reproducible; null lets the provider choose.</summary>
@@ -145,6 +182,21 @@ public sealed class AgentOptions : IValidatableOptions
         if (MaxIterations is < 1 or > 100)
         {
             yield return $"'{SectionName}:{nameof(MaxIterations)}' must be between 1 and 100.";
+        }
+
+        if (MaxToolCalls is < 1 or > 500)
+        {
+            yield return $"'{SectionName}:{nameof(MaxToolCalls)}' must be between 1 and 500.";
+        }
+
+        // A serial model spends one turn per call and needs one more to answer. If the iteration
+        // cap is the tighter of the two it becomes the budget again, and the tool-call cap only
+        // binds models that batch — the exact inequality it exists to remove.
+        if (MaxIterations <= MaxToolCalls)
+        {
+            yield return $"'{SectionName}:{nameof(MaxIterations)}' ({MaxIterations}) must exceed "
+                + $"'{nameof(MaxToolCalls)}' ({MaxToolCalls}), or a model calling one tool per turn "
+                + "cannot spend its budget and still answer.";
         }
 
         if (Repeats < 1)

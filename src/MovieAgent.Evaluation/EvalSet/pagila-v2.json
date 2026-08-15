@@ -108,6 +108,17 @@
       "reference_sql": "select count(*) from film_category fc join category c on c.category_id = fc.category_id where c.name = 'Horror'",
       "requires_tools": [["search_category"], ["get_category_film_ids", "count_category_films"]],
       "note": "TRUNCATION HANDLING. Horror (category_id 11) has 142 films (verified), against get_category_film_ids's cap of 50 rows (MaxRows in ToolCatalogue.cs). On standard, the tool's own output states the true total on its last line per the frozen format ('142 rows, showing first 50') — the correct answer is already in the text, it does not require pagination. The two failure modes this targets: reading only the 50 visible identifiers and answering 50, or answering 142 correctly without the answer actually having come from that line (rare, but a bare correct/incorrect score can't tell the two 142s apart). ToolOutputFormat.TryParseTruncation lets the grader recover the stated total from every tool call in the run independently of what the model wrote and record it (truncation_seen, truncation_stated_total, answer_matches_stated_total on every graded run, not just this question) alongside whether the model's answer matches it — not proof of what the model read, but a mismatch is proof the answer did not come from this line, which a bare pass/fail cannot show. On enriched, count_category_films returns 142 directly in one call, no truncation notice fires at all, and this is the intended cross-surface contrast: does the count tool change behaviour beyond making things shorter."
+    },
+    {
+      "id": "hop5-customer-country",
+      "question": "Which country does the customer Bobby Boudreau live in?",
+      "expected_hops": 5,
+      "expected_behaviour": "answer",
+      "expected_answer": "Anguilla",
+      "answer_kind": "exact",
+      "reference_sql": "select co.country from customer c join address a on a.address_id = c.address_id join city ci on ci.city_id = a.city_id join country co on co.country_id = ci.country_id where c.first_name = 'BOBBY' and c.last_name = 'BOUDREAU'",
+      "requires_tools": [["search_customer"], ["get_customer"], ["get_address"], ["get_city"], ["get_country"]],
+      "note": "The second five-hop question, added 2026-08-15 because relabelling hop5-title-2025-renter to its true depth of 4 left fanout-store-cities alone in the bucket. Five sequential calls with no short-circuit: search_customer returns only customer_id and the name, get_customer returns address_id but not city_id, get_address returns city_id but not country_id, get_city returns country_id but not the country name. Every step was checked against the tool SQL rather than the schema -- get_film_inventory_ids already returns store_id, which is what silently collapsed the intended film-to-manager chain to four hops. Zero fan-out: each call returns exactly one row, so the answer is single-valued with no truncation and no choice of branch. 'Bobby Boudreau' matches exactly one customer under search_customer's own predicate, which searches email as well as name. 'Anguilla' is one of 109 countries, is a substring of no other country, and no city name contains it. South Hill (city 493) was picked over better-known cities deliberately: a model cannot skip get_country and name the country from world knowledge the way Kabul or London would allow. Where that shortcut is taken anyway it shows up as navigation_complete false and is excluded from the strict score, same as hop4-customer-country."
     }
   ]
 }

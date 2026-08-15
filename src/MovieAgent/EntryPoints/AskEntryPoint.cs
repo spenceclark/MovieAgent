@@ -4,6 +4,7 @@ using MovieAgent.Agent.Recording;
 using MovieAgent.Hosting;
 using MovieAgent.Agent.Abstractions;
 using MovieAgent.Agent.Configuration;
+using MovieAgent.Agent.Tools;
 
 namespace MovieAgent.EntryPoints;
 
@@ -45,9 +46,15 @@ public sealed class AskEntryPoint : IAppEntryPoint
         var model = _llmOptions.Provider == LlmProvider.OpenAI
             ? _llmOptions.OpenAI.Model
             : _llmOptions.Ollama.Model;
+        var surface = ToolSurfaces.Get(_agentOptions.ToolSurface);
 
         var run = await _agentLoop.RunAsync(
-            new AgentRunRequest { QuestionId = "adhoc", Question = question },
+            new AgentRunRequest
+            {
+                QuestionId = "adhoc",
+                Question = question,
+                SystemPrompt = SystemPrompt.ForSurface(surface, _agentOptions.OmitDeclineCredit),
+            },
             _llmOptions.Provider.ToString(),
             model,
             cancellationToken);

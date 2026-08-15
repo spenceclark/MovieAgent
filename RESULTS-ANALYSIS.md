@@ -1,6 +1,9 @@
 # MovieAgent sweep v1: validation and analysis
 
-> **The numbers here are superseded. See [RESULTS-ANALYSIS-2.md](RESULTS-ANALYSIS-2.md).**
+
+> **The numbers here are superseded twice over. The current results are
+> [RESULTS-ANALYSIS-3.md](RESULTS-ANALYSIS-3.md) (sweep v3); the intermediate correction is
+> [RESULTS-ANALYSIS-2.md](RESULTS-ANALYSIS-2.md).**
 >
 > This analysis found two harness defects that were affecting the results it was analysing —
 > concern 9b (local and hosted models were sent different tool-output formats) and the retry hint on
@@ -629,6 +632,12 @@ refused on this surface. Counts are runs, not questions (2 repeats each).
 
 ## 7. The control: does the no-shortcuts constraint cause the failures?
 
+> **Re-run after prompt audit.** The original control inherited the standard system prompt, which
+> said every tool reads one table and none can join — the opposite of this surface. The results
+> below supersede it. All six models were rerun at output contract 1.3 with a SQL-specific prompt
+> that requires reading the actual schema before writing PostgreSQL, permits joins, aggregates,
+> subqueries and CTEs, and explains recovery from SQL errors. Prompt hash: `c67d8a8a366b`.
+
 The premise of this whole harness is that a generic SQL surface destroys what is being measured —
 one join replaces a five-hop chain. That was asserted, never tested. This is the test.
 
@@ -656,10 +665,10 @@ one mid-tier, and one control already at ceiling. Same config as the main sweep.
 |---|---|---|---|---|---|---|---|---|---|
 | granite3.3:8b | 0 | 0 | — | 0 | 0.00 | 1.00 | 0 | 0 | — (no tool call at all, 20/20 runs) |
 | command-r7b | 0 | 0 | — | 0 | 0.00 | 1.00 | 0 | 0 | — (no tool call at all, 20/20 runs) |
-| llama3.2 | 0 | 0 | — | 0 | 1.00 | 2.00 | 20 | **20 (100%)** | **0/20** |
-| mistral-nemo:12b | 0 | **2** | **+2** | 1 | 1.00 | 2.00 | 14 | 10 (71%) | **0/14** |
-| gemma4:e4b | 18 | 18 | — | 9 | 3.40 | 4.40 | 48 | 18 (38%) | **20/20** |
-| qwen3.5:4b | 20 | 20 | — | 10 | 4.20 | 5.20 | 64 | 4 (6%) | **20/20** |
+| llama3.2 | 0 | 0 | — | 0 | 1.40 | 2.40 | 24 | **24 (100%)** | **0/20** |
+| mistral-nemo:12b | 0 | **2** | **+2** | 1 | 1.00 | 2.00 | 6 | 2 (33%) | **0/6** |
+| gemma4:e4b | 18 | 18 | — | 9 | 3.00 | 4.00 | 40 | 20 (50%) | **20/20** |
+| qwen3.5:4b | 18 | 20 | **+2** | 10 | 2.20 | 3.20 | 24 | 4 (17%) | **20/20** |
 
 ### What it shows
 
@@ -674,50 +683,53 @@ tool calls here, exactly as in 42 runs each on the main surface. Their failure h
 with chain composition; they never reach the point where composition matters. Nothing about the
 tool surface can fix a model that will not use the tool channel.
 
-**Prediction 2 refuted: "one call then stop" did not become "one call is enough".** This was
-expected to improve sharply, and it barely moved. Look at the loop shape rather than the score:
-llama3.2 and mistral-nemo both sit at **exactly 1.00 tool calls and 2.00 iterations per run** — on
-this surface *and* on the main one. One call, then answer, regardless of what the call returned.
-The surface changed; the shape of the failure did not. mistral-nemo's +2 is the two runs where a
-single blind guess happened to be right.
+**Prediction 2 refuted: "one call then stop" did not become "one call is enough".** The corrected
+prompt makes the mechanism clearer. `mistral-nemo` remains at exactly **1.00 call and 2.00
+iterations per run**. It follows the instruction far enough to call `get_schema` in 14 runs, then
+stops and writes SQL as prose rather than invoking `execute_sql`. In the other six it skips the
+schema and writes SQL first. Its two passes are the only question answerable by that single direct
+query. `llama3.2` does make several calls on one question, lifting its mean to 1.40, but it still
+writes SQL before reading the schema in every run and all 24 queries fail.
 
-**The behavioural column is the sharpest result in the whole report.** Whether a model read the
-schema before writing SQL separates the two groups perfectly, with no overlap:
+**The behavioural column remains the sharpest result, but the wording matters.** Merely calling
+`get_schema` is not enough; the model must read it and then continue to `execute_sql`. Whether a
+model did both in that order separates the two groups perfectly, with no overlap:
 
 ```
-never read it   llama3.2      0/20 runs    →  100% of queries failed  →  0/20 correct
-                mistral-nemo  0/14 runs    →   71% of queries failed  →  2/20 correct
-always read it  gemma4:e4b   20/20 runs    →   38% of queries failed  → 18/20 correct
-                qwen3.5:4b   20/20 runs    →    6% of queries failed  → 20/20 correct
+schema → SQL    gemma4:e4b   20/20 runs    →  20 errors / 40 SQL calls  → 18/20 correct
+                qwen3.5:4b   20/20 runs    →   4 errors / 24 SQL calls  → 20/20 correct
+never did both llama3.2       0/20 SQL runs →  24 errors / 24 SQL calls →  0/20 correct
+                mistral-nemo   0/6 SQL runs →   2 errors /  6 SQL calls →  2/20 correct
 ```
 
-The models that skip it invent plural table names that do not exist — `films`, `actors`,
-`customers` — and columns on the wrong table. That is the main sweep's fabricated-argument
-instinct, unchanged, in a new costume: assert a name, do not check it. The models that read it
-first write joins that work. **The failing behaviour is not "cannot chain", it is "will not
-check".**
+The weak models either invent table and column names without checking, or inspect the schema but
+fail to turn it into another structured call. That is the main sweep's behaviour in a new costume:
+guess, or announce the next action as text, instead of performing it. **The failure is not that
+the constrained route needs too many joins. It occurs before that distinction can help.**
 
-**Errors are only useful to a model that reads them.** gemma4 hit 18 SQL errors in 48 calls and
-still scored 18/20, because it iterates: read the error, fix the query. llama3.2 hit 20 errors in
-20 calls and scored 0, because it never issues a second query. The database's feedback is identical
-in both cases; only one model is listening.
+**Errors are only useful to a model that acts on them.** Gemma had 20 calls marked as errors among
+40 SQL calls and still scored 18/20 because it keeps trying until it reaches data. Llama had 24
+errors in 24 SQL calls and scored zero. It frequently says it will try again, but emits the next
+call as answer text instead of invoking it.
 
-**The control held.** qwen3.5:4b 20 → 20 and gemma4:e4b 18 → 18. Worth noting gemma4's flat score
-hides a moved failure: it fails `hop5-title-2025-renter` on the main surface and
-`hop4-inventory-store-city` on this one. Same total, different question.
+**The shortcut can help a model that already uses tools well.** On these same ten final-sweep
+questions, qwen3.5:4b moves **18 → 20**: SQL rescues `hop5-title-2025-renter`, which it missed on
+both constrained runs. Gemma stays **18 → 18**, but its failure moves from that question on the
+main surface to `hop3-rental-film-title` here. Same total, different question.
 
 ### What this does and does not license
 
-It does license the premise. The main sweep's chain scores (0, 0, 0, 0, 18, 20) and the shortcut
-scores (0, 0, 0, 2, 18, 20) agree almost exactly, which means the chain metric is tracking tool-use
-competence rather than an artefact of a deliberately awkward surface.
+It does license the premise. The main sweep's scores on these ten questions (0, 0, 0, 0, 18, 18)
+and the shortcut scores (0, 0, 0, 2, 18, 20) agree closely. Across the four weak models, the
+aggregate moves from **0/80 to 2/80**. The constrained surface is not manufacturing their failure.
 
 It does not license reading the shortcut column as a capability score, for the reason in the
 caveat above — and note that the models which *did* well here were already doing well on chains, so
 this data cannot separate "good at SQL" from "good at tool use" for them. The only clean
-observation is the negative one: **the shortcut rescued nobody.**
+observation is narrower: **the shortcut helped an already-capable model, but did not turn any
+failing model into a useful one.**
 
-Two caveats on the run itself. The brief named five models and listed six; all six were run. And
-`llama3.2:3b` is not a pulled Ollama tag — the first attempt returned 404 on every run, recorded as
-20 `Errored` runs, and was re-run against `llama3.2`, which is the tag the main sweep used. The
-errored file was discarded, not reported.
+One historical caveat: the original control's contradictory prompt means its trajectories and
+efficiency figures should not be quoted. The fact that all six scores repeated exactly under the
+corrected prompt is reassuring, but the reports linked from the repository now contain only the
+new contract-1.3 runs.

@@ -12,3 +12,4 @@ runs/
 # wrong directory drops one at the repo root where runs/ does not cover it.
 /*.jsonl
 *.regraded.jsonl
+work/

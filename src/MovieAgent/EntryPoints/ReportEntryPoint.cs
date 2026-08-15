@@ -25,13 +25,19 @@ public sealed class ReportEntryPoint : IAppEntryPoint
         }
 
         // Alongside the input by default, same convention as regrade. Reports are derived data:
-        // regenerating one must never be able to overwrite the recorded run it came from, which
-        // the .md extension guarantees.
+        // regenerating one must never be able to overwrite the recorded run it came from. The
+        // default name guarantees that; an explicit output path does not, so it is checked.
         var output = args.Length > 1
             ? args[1]
             : Path.Combine(
                 Path.GetDirectoryName(Path.GetFullPath(input))!,
                 Path.GetFileNameWithoutExtension(input) + ".report.md");
+
+        if (SamePath(input, output))
+        {
+            Console.Error.WriteLine($"Refusing to write the report over its own source: {input}");
+            return 1;
+        }
 
         var result = await RunReport.WriteAsync(input, output, cancellationToken);
 
@@ -40,4 +46,11 @@ public sealed class ReportEntryPoint : IAppEntryPoint
         Console.WriteLine($"written to {result.OutputPath}");
         return 0;
     }
+
+    /// <summary>
+    /// Case-insensitive because the recorded runs live on Windows. Not a security boundary —
+    /// it stops a mistyped argument destroying a run, not a determined caller with a symlink.
+    /// </summary>
+    internal static bool SamePath(string a, string b) =>
+        string.Equals(Path.GetFullPath(a), Path.GetFullPath(b), StringComparison.OrdinalIgnoreCase);
 }

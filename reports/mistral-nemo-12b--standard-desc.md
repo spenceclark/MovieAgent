@@ -1,20 +1,21 @@
-# Run report: runs-20260814-164535.jsonl
+# Run report: runs-20260815-161301.regraded-v4.jsonl
 
 | | |
 |---|---|
-| runs | 44 |
+| runs | 46 |
 | model(s) | mistral-nemo:12b |
 | surface(s) | standard+desc |
-| questions | 22 |
-| correct | 6/42 scored run(s) |
-| outcomes | Answered 42, EmptyAnswer 2 |
-| tool calls | 46 total, 1.05 per run |
-| iterations | 88 total, 2.00 per run |
-| tokens | in 110107, out 3003 |
-| elapsed | 313.1s total, 7.1s per run |
-| config | seed 42, temp 0, max iterations 10, max output tokens 2500, thinking off |
-| output format | 1.2 |
-| system prompt | `865645a6ab4e` |
+| questions | 23 |
+| correct | 6/44 scored run(s) |
+| outcomes | Answered 44, EmptyAnswer 2 |
+| tool calls | 53 total, 1.15 per run |
+| iterations | 92 total, 2.00 per run |
+| tokens | in 116797, out 3158 |
+| elapsed | 270.7s total, 5.9s per run |
+| config | seed 42, temp 0, max iterations 20, max tool calls 15, max output tokens 2500, thinking off |
+| output format | 1.3 |
+| system prompt | `b5525d200245` |
+| tool schema | `43e1f6be5097` |
 
 ## Contents
 
@@ -31,10 +32,10 @@
 - [hop3-rental-film-title (repeat 1)](#hop3-rental-film-title-repeat-1) — FAIL, 1 call(s), 2 iteration(s)
 - [hop3-rental-film-title (repeat 2)](#hop3-rental-film-title-repeat-2) — FAIL, 1 call(s), 2 iteration(s)
 - [hop3-store-manager-email (repeat 1)](#hop3-store-manager-email-repeat-1) — FAIL, 3 call(s), 2 iteration(s)
-- [hop3-store-manager-email (repeat 2)](#hop3-store-manager-email-repeat-2) — FAIL, 1 call(s), 2 iteration(s)
+- [hop3-store-manager-email (repeat 2)](#hop3-store-manager-email-repeat-2) — FAIL, 3 call(s), 2 iteration(s)
 - [hop4-customer-country (repeat 1)](#hop4-customer-country-repeat-1) — FAIL, 1 call(s), 2 iteration(s)
 - [hop4-customer-country (repeat 2)](#hop4-customer-country-repeat-2) — FAIL, 1 call(s), 2 iteration(s)
-- [hop4-inventory-store-city (repeat 1)](#hop4-inventory-store-city-repeat-1) — FAIL, 1 call(s), 2 iteration(s)
+- [hop4-inventory-store-city (repeat 1)](#hop4-inventory-store-city-repeat-1) — FAIL, 4 call(s), 2 iteration(s)
 - [hop4-inventory-store-city (repeat 2)](#hop4-inventory-store-city-repeat-2) — FAIL, 1 call(s), 2 iteration(s)
 - [hop5-title-2025-renter (repeat 1)](#hop5-title-2025-renter-repeat-1) — FAIL, 1 call(s), 2 iteration(s)
 - [hop5-title-2025-renter (repeat 2)](#hop5-title-2025-renter-repeat-2) — FAIL, 1 call(s), 2 iteration(s)
@@ -62,6 +63,8 @@
 - [fanout-actor-most-films (repeat 2)](#fanout-actor-most-films-repeat-2) — FAIL, 1 call(s), 2 iteration(s)
 - [truncation-category-count (repeat 1)](#truncation-category-count-repeat-1) — FAIL, 1 call(s), 2 iteration(s)
 - [truncation-category-count (repeat 2)](#truncation-category-count-repeat-2) — FAIL, 1 call(s), 2 iteration(s)
+- [hop5-customer-country (repeat 1)](#hop5-customer-country-repeat-1) — FAIL, 1 call(s), 2 iteration(s)
+- [hop5-customer-country (repeat 2)](#hop5-customer-country-repeat-2) — FAIL, 1 call(s), 2 iteration(s)
 
 ---
 
@@ -77,12 +80,12 @@
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 2 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2490, out 52 |
-| elapsed | 19043 ms |
-| run id | `978acc059a1d461bb14a9c068921b64e` |
-| started | 2026-08-14 16:45:35Z |
+| tokens | in 2521, out 52 |
+| elapsed | 16585 ms |
+| run id | `5513af1e9233404a9ad33a72710dfdfc` |
+| started | 2026-08-15 16:13:01Z |
 
 ### Iterations
 
@@ -91,8 +94,8 @@
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2415, out 28 |
-| elapsed | 16428 ms |
+| tokens | in 2446, out 28 |
+| elapsed | 14677 ms |
 | tool calls | 1 |
 | content hash | `093feacd1208` |
 
@@ -103,7 +106,7 @@
   | | |
   |---|---|
   | rows returned | 1 |
-  | elapsed | 133 ms |
+  | elapsed | 128 ms |
   | call id | `call_1` |
   | arguments | `{"title_contains":"ALAMO VIDEOTAPE"}` |
   | result | `film_id \| title ⏎ 11 \| ALAMO VIDEOTAPE ⏎ 1 rows` |
@@ -114,7 +117,7 @@
 |---|---|
 | finish reason | stop |
 | tokens | in 75, out 24 |
-| elapsed | 2462 ms |
+| elapsed | 1760 ms |
 | tool calls | 0 |
 | content hash | `ed865980041d` |
 
@@ -140,7 +143,7 @@ The replacement cost of the film titled "ALAMO VIDEOTAPE" is $250.
 | expected | `16.99` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **get_film** |
@@ -161,12 +164,12 @@ The replacement cost of the film titled "ALAMO VIDEOTAPE" is $250.
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 2 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2490, out 52 |
-| elapsed | 5577 ms |
-| run id | `e89557cbb74d406ab6cc64f8eb943e8d` |
-| started | 2026-08-14 16:45:54Z |
+| tokens | in 2521, out 52 |
+| elapsed | 4307 ms |
+| run id | `c13a99a67e6f478db11cf838c45ad290` |
+| started | 2026-08-15 16:13:18Z |
 
 ### Iterations
 
@@ -175,8 +178,8 @@ The replacement cost of the film titled "ALAMO VIDEOTAPE" is $250.
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2415, out 28 |
-| elapsed | 3356 ms |
+| tokens | in 2446, out 28 |
+| elapsed | 2488 ms |
 | tool calls | 1 |
 | content hash | `093feacd1208` |
 
@@ -198,7 +201,7 @@ The replacement cost of the film titled "ALAMO VIDEOTAPE" is $250.
 |---|---|
 | finish reason | stop |
 | tokens | in 75, out 24 |
-| elapsed | 2216 ms |
+| elapsed | 1814 ms |
 | tool calls | 0 |
 | content hash | `ed865980041d` |
 
@@ -224,7 +227,7 @@ The replacement cost of the film titled "ALAMO VIDEOTAPE" is $250.
 | expected | `16.99` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **get_film** |
@@ -245,12 +248,12 @@ The replacement cost of the film titled "ALAMO VIDEOTAPE" is $250.
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 2 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2497, out 38 |
-| elapsed | 4561 ms |
-| run id | `5ac06932ab9a49a09b48d8ec80279490` |
-| started | 2026-08-14 16:46:00Z |
+| tokens | in 2528, out 38 |
+| elapsed | 3889 ms |
+| run id | `6fa22757a8d04010943418d30431b3b5` |
+| started | 2026-08-15 16:13:22Z |
 
 ### Iterations
 
@@ -259,8 +262,8 @@ The replacement cost of the film titled "ALAMO VIDEOTAPE" is $250.
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2411, out 23 |
-| elapsed | 3028 ms |
+| tokens | in 2442, out 23 |
+| elapsed | 2619 ms |
 | tool calls | 1 |
 | content hash | `f71f4320c5e5` |
 
@@ -282,7 +285,7 @@ The replacement cost of the film titled "ALAMO VIDEOTAPE" is $250.
 |---|---|
 | finish reason | stop |
 | tokens | in 86, out 15 |
-| elapsed | 1530 ms |
+| elapsed | 1267 ms |
 | tool calls | 0 |
 | content hash | `7d647db503e5` |
 
@@ -308,7 +311,7 @@ The film AGENT TRUMAN has 11 credited actors.
 | expected | `7` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film_actor_ids or count_film_actors |
 | never reached | **search_film** |
@@ -333,12 +336,12 @@ Fabricated:
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 2 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2475, out 38 |
-| elapsed | 4225 ms |
-| run id | `4a944a6d73d747acb50bfa3f6c43ff46` |
-| started | 2026-08-14 16:46:04Z |
+| tokens | in 2528, out 38 |
+| elapsed | 3178 ms |
+| run id | `20e9674f3094464b8f298e7c77f36c74` |
+| started | 2026-08-15 16:13:26Z |
 
 ### Iterations
 
@@ -347,37 +350,37 @@ Fabricated:
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2411, out 25 |
-| elapsed | 2874 ms |
+| tokens | in 2442, out 23 |
+| elapsed | 1987 ms |
 | tool calls | 1 |
-| content hash | `2e89ea48ff5f` |
+| content hash | `f71f4320c5e5` |
 
 ##### Tool calls
 
-- `search_film`
+- `get_film_actor_ids`
 
   | | |
   |---|---|
-  | rows returned | 1 |
-  | elapsed | 1 ms |
+  | rows returned | 10 |
+  | elapsed | 0 ms |
   | call id | `call_1` |
-  | arguments | `{"title_contains":"AGENT TRUMAN"}` |
-  | result | `film_id \| title ⏎ 6 \| AGENT TRUMAN ⏎ 1 rows` |
+  | arguments | `{"film_id":1}` |
+  | result | `actor_id ⏎ 1 ⏎ 10 ⏎ 20 ⏎ 30 ⏎ 40 ⏎ 53 ⏎ 108 ⏎ 162 ⏎ 188 ⏎ 198 ⏎ 10 rows` |
 
 #### Iteration 2
 
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 64, out 13 |
-| elapsed | 1348 ms |
+| tokens | in 86, out 15 |
+| elapsed | 1189 ms |
 | tool calls | 0 |
-| content hash | `62a8ca56f8a6` |
+| content hash | `7d647db503e5` |
 
 **Said:**
 
 ```
-The film "Agent Truman" has 3 credited actors.
+The film AGENT TRUMAN has 11 credited actors.
 ```
 
 _No tool calls this iteration._
@@ -387,7 +390,7 @@ _No tool calls this iteration._
 **Answer given:**
 
 ```
-The film "Agent Truman" has 3 credited actors.
+The film AGENT TRUMAN has 11 credited actors.
 ```
 
 | | |
@@ -396,12 +399,16 @@ The film "Agent Truman" has 3 credited actors.
 | expected | `7` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film_actor_ids or count_film_actors |
-| never reached | **get_film_actor_ids or count_film_actors** |
-| fabricated arguments | 0 (invented id 0, invented search term 0) |
-| note | `Expected 7; answer contained 3.` |
+| never reached | **search_film** |
+| fabricated arguments | 1 (invented id 1, invented search term 0) |
+| note | `Expected 7; answer contained 11.` |
+
+Fabricated:
+
+- `iter 1: get_film_actor_ids.film_id=1`
 
 ---
 
@@ -417,12 +424,12 @@ The film "Agent Truman" has 3 credited actors.
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 2 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2496, out 326 |
-| elapsed | 28841 ms |
-| run id | `6770243dce364bc58cd7849a192fc18f` |
-| started | 2026-08-14 16:46:08Z |
+| tokens | in 2527, out 326 |
+| elapsed | 22082 ms |
+| run id | `7debb39402b44d0496eafc48e01b1115` |
+| started | 2026-08-15 16:13:29Z |
 
 ### Iterations
 
@@ -431,8 +438,8 @@ The film "Agent Truman" has 3 credited actors.
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2415, out 29 |
-| elapsed | 3755 ms |
+| tokens | in 2446, out 29 |
+| elapsed | 3106 ms |
 | tool calls | 1 |
 | content hash | `6eeceac6b29f` |
 
@@ -443,7 +450,7 @@ The film "Agent Truman" has 3 credited actors.
   | | |
   |---|---|
   | rows returned | 1 |
-  | elapsed | 2 ms |
+  | elapsed | 1 ms |
   | call id | `call_1` |
   | arguments | `{"name_contains":"PENELOPE GUINESS"}` |
   | result | `actor_id \| first_name \| last_name ⏎ 1 \| PENELOPE \| GUINESS ⏎ 1 rows` |
@@ -454,7 +461,7 @@ The film "Agent Truman" has 3 credited actors.
 |---|---|
 | finish reason | stop |
 | tokens | in 81, out 297 |
-| elapsed | 25082 ms |
+| elapsed | 18974 ms |
 | tool calls | 0 |
 | content hash | `8ed861b4b56f` |
 
@@ -512,7 +519,7 @@ Penelope Guiness is credited in 32 films. Here are some of them:
 | expected | `19` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_actor, get_actor_film_ids or count_actor_films |
 | never reached | **get_actor_film_ids or count_actor_films** |
@@ -533,12 +540,12 @@ Penelope Guiness is credited in 32 films. Here are some of them:
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 2 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2496, out 326 |
-| elapsed | 28279 ms |
-| run id | `d838bf94915d4b319895b09920a12078` |
-| started | 2026-08-14 16:46:37Z |
+| tokens | in 2527, out 326 |
+| elapsed | 21697 ms |
+| run id | `312b224ed418489991e0bd2a95138c20` |
+| started | 2026-08-15 16:13:52Z |
 
 ### Iterations
 
@@ -547,8 +554,8 @@ Penelope Guiness is credited in 32 films. Here are some of them:
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2415, out 29 |
-| elapsed | 3354 ms |
+| tokens | in 2446, out 29 |
+| elapsed | 2759 ms |
 | tool calls | 1 |
 | content hash | `6eeceac6b29f` |
 
@@ -570,7 +577,7 @@ Penelope Guiness is credited in 32 films. Here are some of them:
 |---|---|
 | finish reason | stop |
 | tokens | in 81, out 297 |
-| elapsed | 24923 ms |
+| elapsed | 18936 ms |
 | tool calls | 0 |
 | content hash | `8ed861b4b56f` |
 
@@ -628,7 +635,7 @@ Penelope Guiness is credited in 32 films. Here are some of them:
 | expected | `19` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_actor, get_actor_film_ids or count_actor_films |
 | never reached | **get_actor_film_ids or count_actor_films** |
@@ -649,12 +656,12 @@ Penelope Guiness is credited in 32 films. Here are some of them:
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 3 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2475, out 39 |
-| elapsed | 4881 ms |
-| run id | `745f742dc2704e0ebf7e2fc008ea7275` |
-| started | 2026-08-14 16:47:06Z |
+| tokens | in 2506, out 38 |
+| elapsed | 4078 ms |
+| run id | `76de58df342b47b89d2ce52d0b13cf7a` |
+| started | 2026-08-15 16:14:13Z |
 
 ### Iterations
 
@@ -663,8 +670,8 @@ Penelope Guiness is credited in 32 films. Here are some of them:
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2410, out 26 |
-| elapsed | 3466 ms |
+| tokens | in 2441, out 25 |
+| elapsed | 2870 ms |
 | tool calls | 1 |
 | content hash | `27cfa43dccb4` |
 
@@ -686,7 +693,7 @@ Penelope Guiness is credited in 32 films. Here are some of them:
 |---|---|
 | finish reason | stop |
 | tokens | in 65, out 13 |
-| elapsed | 1413 ms |
+| elapsed | 1205 ms |
 | tool calls | 0 |
 | content hash | `b4208d0cc3f8` |
 
@@ -712,7 +719,7 @@ The film "Adaptation Holes" is in English.
 | expected | `Italian` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film, get_language |
 | never reached | **get_film, get_language** |
@@ -732,12 +739,12 @@ The film "Adaptation Holes" is in English.
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 3 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2475, out 39 |
-| elapsed | 4347 ms |
-| run id | `d425ddfc7817483d9f5ecbfaa7058f47` |
-| started | 2026-08-14 16:47:10Z |
+| tokens | in 2506, out 39 |
+| elapsed | 3372 ms |
+| run id | `b69665147adc49359777227f6199bead` |
+| started | 2026-08-15 16:14:17Z |
 
 ### Iterations
 
@@ -746,8 +753,8 @@ The film "Adaptation Holes" is in English.
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2410, out 26 |
-| elapsed | 2995 ms |
+| tokens | in 2441, out 26 |
+| elapsed | 2278 ms |
 | tool calls | 1 |
 | content hash | `27cfa43dccb4` |
 
@@ -758,7 +765,7 @@ The film "Adaptation Holes" is in English.
   | | |
   |---|---|
   | rows returned | 1 |
-  | elapsed | 2 ms |
+  | elapsed | 1 ms |
   | call id | `call_1` |
   | arguments | `{"title_contains":"ADAPTATION HOLES"}` |
   | result | `film_id \| title ⏎ 3 \| ADAPTATION HOLES ⏎ 1 rows` |
@@ -769,7 +776,7 @@ The film "Adaptation Holes" is in English.
 |---|---|
 | finish reason | stop |
 | tokens | in 65, out 13 |
-| elapsed | 1348 ms |
+| elapsed | 1092 ms |
 | tool calls | 0 |
 | content hash | `b4208d0cc3f8` |
 
@@ -795,7 +802,7 @@ The film "Adaptation Holes" is in English.
 | expected | `Italian` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film, get_language |
 | never reached | **get_film, get_language** |
@@ -815,12 +822,12 @@ The film "Adaptation Holes" is in English.
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 3 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2469, out 65 |
-| elapsed | 6842 ms |
-| run id | `60b85bfdcadd4c4b870174c57ec316c4` |
-| started | 2026-08-14 16:47:15Z |
+| tokens | in 2500, out 65 |
+| elapsed | 5256 ms |
+| run id | `e4cedb64793e4bbbbfdc63b7540228b9` |
+| started | 2026-08-15 16:14:21Z |
 
 ### Iterations
 
@@ -829,8 +836,8 @@ The film "Adaptation Holes" is in English.
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2410, out 22 |
-| elapsed | 2867 ms |
+| tokens | in 2441, out 22 |
+| elapsed | 2434 ms |
 | tool calls | 1 |
 | content hash | `f95e022eb2b4` |
 
@@ -841,7 +848,7 @@ The film "Adaptation Holes" is in English.
   | | |
   |---|---|
   | rows returned | 3 |
-  | elapsed | 1 ms |
+  | elapsed | 0 ms |
   | call id | `call_1` |
   | arguments | `{"film_id":1}` |
   | result | `category_id ⏎ 10 ⏎ 13 ⏎ 16 ⏎ 3 rows` |
@@ -852,7 +859,7 @@ The film "Adaptation Holes" is in English.
 |---|---|
 | finish reason | stop |
 | tokens | in 59, out 43 |
-| elapsed | 3973 ms |
+| elapsed | 2821 ms |
 | tool calls | 0 |
 | content hash | `ae5e0b56951b` |
 
@@ -886,7 +893,7 @@ The film ALIEN CENTER belongs to the following categories:
 | expected | `Comedy; New; Children` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film_category_ids, get_category |
 | never reached | **search_film, get_category** |
@@ -911,12 +918,12 @@ Fabricated:
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 3 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2469, out 65 |
-| elapsed | 6431 ms |
-| run id | `d1cd0ee0c86f45da9c8475c9c4c55092` |
-| started | 2026-08-14 16:47:22Z |
+| tokens | in 2500, out 65 |
+| elapsed | 4865 ms |
+| run id | `bcef567d04d345f6839ad23683ddf0a2` |
+| started | 2026-08-15 16:14:26Z |
 
 ### Iterations
 
@@ -925,8 +932,8 @@ Fabricated:
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2410, out 22 |
-| elapsed | 2645 ms |
+| tokens | in 2441, out 22 |
+| elapsed | 1974 ms |
 | tool calls | 1 |
 | content hash | `f95e022eb2b4` |
 
@@ -948,7 +955,7 @@ Fabricated:
 |---|---|
 | finish reason | stop |
 | tokens | in 59, out 43 |
-| elapsed | 3784 ms |
+| elapsed | 2889 ms |
 | tool calls | 0 |
 | content hash | `ae5e0b56951b` |
 
@@ -982,7 +989,7 @@ The film ALIEN CENTER belongs to the following categories:
 | expected | `Comedy; New; Children` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film_category_ids, get_category |
 | never reached | **search_film, get_category** |
@@ -1007,12 +1014,12 @@ Fabricated:
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 3 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2523, out 46 |
-| elapsed | 5275 ms |
-| run id | `d9ca7c93f84f47aeb04651adedec8987` |
-| started | 2026-08-14 16:47:28Z |
+| tokens | in 2554, out 46 |
+| elapsed | 4239 ms |
+| run id | `7def3e0e82154785992d5a1dfbcf90d1` |
+| started | 2026-08-15 16:14:31Z |
 
 ### Iterations
 
@@ -1021,8 +1028,8 @@ Fabricated:
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2406, out 21 |
-| elapsed | 2633 ms |
+| tokens | in 2437, out 21 |
+| elapsed | 2260 ms |
 | tool calls | 1 |
 | content hash | `15af94519998` |
 
@@ -1044,7 +1051,7 @@ Fabricated:
 |---|---|
 | finish reason | stop |
 | tokens | in 117, out 25 |
-| elapsed | 2637 ms |
+| elapsed | 1974 ms |
 | tool calls | 0 |
 | content hash | `d5f54ef39467` |
 
@@ -1070,7 +1077,7 @@ The film rented in rental ID 1 was "Hunchback of Notre Dame, The (1996)".
 | expected | `BLANKET BEVERLY` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | get_rental, get_inventory_item, get_film |
 | never reached | **get_inventory_item, get_film** |
@@ -1090,12 +1097,12 @@ The film rented in rental ID 1 was "Hunchback of Notre Dame, The (1996)".
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 3 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2523, out 35 |
-| elapsed | 4162 ms |
-| run id | `34ba35c4dfdf452488fbcf68afee781d` |
-| started | 2026-08-14 16:47:33Z |
+| tokens | in 2554, out 35 |
+| elapsed | 2984 ms |
+| run id | `2581bc4a91f8407a878d8d7fea46bd95` |
+| started | 2026-08-15 16:14:35Z |
 
 ### Iterations
 
@@ -1104,8 +1111,8 @@ The film rented in rental ID 1 was "Hunchback of Notre Dame, The (1996)".
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2406, out 21 |
-| elapsed | 2678 ms |
+| tokens | in 2437, out 21 |
+| elapsed | 1864 ms |
 | tool calls | 1 |
 | content hash | `15af94519998` |
 
@@ -1127,7 +1134,7 @@ The film rented in rental ID 1 was "Hunchback of Notre Dame, The (1996)".
 |---|---|
 | finish reason | stop |
 | tokens | in 117, out 14 |
-| elapsed | 1482 ms |
+| elapsed | 1118 ms |
 | tool calls | 0 |
 | content hash | `557fca1ebbe4` |
 
@@ -1153,7 +1160,7 @@ The film rented in rental ID 1 was "Casablanca".
 | expected | `BLANKET BEVERLY` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | get_rental, get_inventory_item, get_film |
 | never reached | **get_inventory_item, get_film** |
@@ -1173,12 +1180,12 @@ The film rented in rental ID 1 was "Casablanca".
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 3 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 3 |
-| tokens | in 2612, out 84 |
-| elapsed | 11590 ms |
-| run id | `05d80f529dc5476ca5fe7539b4d5214b` |
-| started | 2026-08-14 16:47:37Z |
+| tokens | in 2644, out 85 |
+| elapsed | 7490 ms |
+| run id | `14f9646e8d384791a21e3062a273bcbf` |
+| started | 2026-08-15 16:14:38Z |
 
 ### Iterations
 
@@ -1187,10 +1194,10 @@ The film rented in rental ID 1 was "Casablanca".
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2415, out 52 |
-| elapsed | 8373 ms |
+| tokens | in 2446, out 54 |
+| elapsed | 5248 ms |
 | tool calls | 3 |
-| content hash | `68f8dd3f7285` |
+| content hash | `3a74969fcac3` |
 
 ##### Tool calls
 
@@ -1211,8 +1218,8 @@ The film rented in rental ID 1 was "Casablanca".
   | rows returned | 1 |
   | elapsed | 0 ms |
   | call id | `call_2` |
-  | arguments | `{"store_id":0}` |
-  | result | `store_id \| manager_staff_id \| address_id ⏎ 0 \| 0 \| 73 ⏎ 1 rows` |
+  | arguments | `{"store_id":20}` |
+  | result | `store_id \| manager_staff_id \| address_id ⏎ 20 \| 20 \| 57 ⏎ 1 rows` |
 
 - `get_staff`
 
@@ -1221,23 +1228,23 @@ The film rented in rental ID 1 was "Casablanca".
   | rows returned | 1 |
   | elapsed | 1 ms |
   | call id | `call_3` |
-  | arguments | `{"staff_id":0}` |
-  | result | `staff_id \| first_name \| last_name \| email \| address_id \| store_id \| active \| username ⏎ 0 \| Tisha \| DuBuque \| schneider9987@rosenbaumreichert.com \| 28 \| 23 \| true \| sina.corkery ⏎ 1 rows` |
+  | arguments | `{"staff_id":34}` |
+  | result | `staff_id \| first_name \| last_name \| email \| address_id \| store_id \| active \| username ⏎ 34 \| Ethan \| Anderson \| abshire1922@torphyandsons.com \| 19 \| 31 \| true \| florance.upton ⏎ 1 rows` |
 
 #### Iteration 2
 
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 197, out 32 |
-| elapsed | 3212 ms |
+| tokens | in 198, out 31 |
+| elapsed | 2237 ms |
 | tool calls | 0 |
-| content hash | `2f0cfa21d477` |
+| content hash | `39b7be8a11be` |
 
 **Said:**
 
 ```
-The email address of the manager of the store that holds inventory item 1 is schneider9987@rosenbaumreichert.com.
+The email address of the manager of the store that holds inventory item 1 is abshire1922@torphyandsons.com.
 ```
 
 _No tool calls this iteration._
@@ -1247,7 +1254,7 @@ _No tool calls this iteration._
 **Answer given:**
 
 ```
-The email address of the manager of the store that holds inventory item 1 is schneider9987@rosenbaumreichert.com.
+The email address of the manager of the store that holds inventory item 1 is abshire1922@torphyandsons.com.
 ```
 
 | | |
@@ -1256,15 +1263,15 @@ The email address of the manager of the store that holds inventory item 1 is sch
 | expected | `hartmann1448@ratkehaley.com` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | yes |
 | required tools | get_inventory_item, get_store, get_staff |
 | fabricated arguments | 2 (invented id 2, invented search term 0) |
 
 Fabricated:
 
-- `iter 1: get_store.store_id=0`
-- `iter 1: get_staff.staff_id=0`
+- `iter 1: get_store.store_id=20`
+- `iter 1: get_staff.staff_id=34`
 
 ---
 
@@ -1280,12 +1287,12 @@ Fabricated:
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 3 |
-| iterations | 2/10 |
-| tool calls | 1 |
-| tokens | in 2483, out 44 |
-| elapsed | 4765 ms |
-| run id | `c4cffd04dda4457bb4ab49688ece59aa` |
-| started | 2026-08-14 16:47:49Z |
+| iterations | 2/20 |
+| tool calls | 3 |
+| tokens | in 2644, out 82 |
+| elapsed | 6492 ms |
+| run id | `bfb2eb2c20724457a94a769fe5a03a1f` |
+| started | 2026-08-15 16:14:46Z |
 
 ### Iterations
 
@@ -1294,10 +1301,10 @@ Fabricated:
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2415, out 21 |
-| elapsed | 2415 ms |
-| tool calls | 1 |
-| content hash | `be20a620fcb5` |
+| tokens | in 2446, out 54 |
+| elapsed | 4447 ms |
+| tool calls | 3 |
+| content hash | `3a74969fcac3` |
 
 ##### Tool calls
 
@@ -1306,25 +1313,45 @@ Fabricated:
   | | |
   |---|---|
   | rows returned | 1 |
-  | elapsed | 1 ms |
+  | elapsed | 0 ms |
   | call id | `call_1` |
   | arguments | `{"inventory_id":1}` |
   | result | `inventory_id \| film_id \| store_id ⏎ 1 \| 1 \| 1 ⏎ 1 rows` |
+
+- `get_store`
+
+  | | |
+  |---|---|
+  | rows returned | 1 |
+  | elapsed | 0 ms |
+  | call id | `call_2` |
+  | arguments | `{"store_id":20}` |
+  | result | `store_id \| manager_staff_id \| address_id ⏎ 20 \| 20 \| 57 ⏎ 1 rows` |
+
+- `get_staff`
+
+  | | |
+  |---|---|
+  | rows returned | 1 |
+  | elapsed | 0 ms |
+  | call id | `call_3` |
+  | arguments | `{"staff_id":34}` |
+  | result | `staff_id \| first_name \| last_name \| email \| address_id \| store_id \| active \| username ⏎ 34 \| Ethan \| Anderson \| abshire1922@torphyandsons.com \| 19 \| 31 \| true \| florance.upton ⏎ 1 rows` |
 
 #### Iteration 2
 
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 68, out 23 |
-| elapsed | 2349 ms |
+| tokens | in 198, out 28 |
+| elapsed | 2042 ms |
 | tool calls | 0 |
-| content hash | `e5d663cec646` |
+| content hash | `4088aeced361` |
 
 **Said:**
 
 ```
-The email address of the manager of the store that holds inventory item 1 is manager@store1.com.
+The email address of the manager of the store that holds inventory item 1 is ethan.anderson@torphyandsons.com.
 ```
 
 _No tool calls this iteration._
@@ -1334,7 +1361,7 @@ _No tool calls this iteration._
 **Answer given:**
 
 ```
-The email address of the manager of the store that holds inventory item 1 is manager@store1.com.
+The email address of the manager of the store that holds inventory item 1 is ethan.anderson@torphyandsons.com.
 ```
 
 | | |
@@ -1343,11 +1370,15 @@ The email address of the manager of the store that holds inventory item 1 is man
 | expected | `hartmann1448@ratkehaley.com` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
-| navigation complete | no |
+| method | deterministic-substring-v4 |
+| navigation complete | yes |
 | required tools | get_inventory_item, get_store, get_staff |
-| never reached | **get_store, get_staff** |
-| fabricated arguments | 0 (invented id 0, invented search term 0) |
+| fabricated arguments | 2 (invented id 2, invented search term 0) |
+
+Fabricated:
+
+- `iter 1: get_store.store_id=20`
+- `iter 1: get_staff.staff_id=34`
 
 ---
 
@@ -1363,12 +1394,12 @@ The email address of the manager of the store that holds inventory item 1 is man
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 4 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2519, out 31 |
-| elapsed | 4033 ms |
-| run id | `a72ce86ef8cb49e1a6bd8cbc3c00e553` |
-| started | 2026-08-14 16:47:54Z |
+| tokens | in 2550, out 31 |
+| elapsed | 3337 ms |
+| run id | `95b89474f9ab46b28e352f381d3c17da` |
+| started | 2026-08-15 16:14:52Z |
 
 ### Iterations
 
@@ -1377,8 +1408,8 @@ The email address of the manager of the store that holds inventory item 1 is man
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2407, out 20 |
-| elapsed | 2692 ms |
+| tokens | in 2438, out 20 |
+| elapsed | 2244 ms |
 | tool calls | 1 |
 | content hash | `46e213c5a484` |
 
@@ -1400,7 +1431,7 @@ The email address of the manager of the store that holds inventory item 1 is man
 |---|---|
 | finish reason | stop |
 | tokens | in 112, out 11 |
-| elapsed | 1338 ms |
+| elapsed | 1090 ms |
 | tool calls | 0 |
 | content hash | `910f791b7759` |
 
@@ -1426,7 +1457,7 @@ Customer 42 lives in the United States.
 | expected | `Thailand` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | get_customer, get_address, get_city, get_country |
 | never reached | **get_address, get_city, get_country** |
@@ -1446,12 +1477,12 @@ Customer 42 lives in the United States.
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 4 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2519, out 31 |
-| elapsed | 3489 ms |
-| run id | `4dd27e35763341999754df0643586750` |
-| started | 2026-08-14 16:47:58Z |
+| tokens | in 2550, out 31 |
+| elapsed | 2660 ms |
+| run id | `076820f5fd2a4a86bb04357ecc292f9e` |
+| started | 2026-08-15 16:14:55Z |
 
 ### Iterations
 
@@ -1460,8 +1491,8 @@ Customer 42 lives in the United States.
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2407, out 20 |
-| elapsed | 2330 ms |
+| tokens | in 2438, out 20 |
+| elapsed | 1722 ms |
 | tool calls | 1 |
 | content hash | `46e213c5a484` |
 
@@ -1472,7 +1503,7 @@ Customer 42 lives in the United States.
   | | |
   |---|---|
   | rows returned | 1 |
-  | elapsed | 1 ms |
+  | elapsed | 0 ms |
   | call id | `call_1` |
   | arguments | `{"customer_id":42}` |
   | result | `customer_id \| first_name \| last_name \| email \| address_id \| store_id \| activebool \| create_date ⏎ 42 \| CAROLYN \| PEREZ \| CAROLYN.PEREZ@sakilacustomer.org \| 46 \| 2 \| true \| 02/13/2022 ⏎ 1 rows` |
@@ -1483,7 +1514,7 @@ Customer 42 lives in the United States.
 |---|---|
 | finish reason | stop |
 | tokens | in 112, out 11 |
-| elapsed | 1158 ms |
+| elapsed | 937 ms |
 | tool calls | 0 |
 | content hash | `910f791b7759` |
 
@@ -1509,7 +1540,7 @@ Customer 42 lives in the United States.
 | expected | `Thailand` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | get_customer, get_address, get_city, get_country |
 | never reached | **get_address, get_city, get_country** |
@@ -1529,12 +1560,12 @@ Customer 42 lives in the United States.
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 4 |
-| iterations | 2/10 |
-| tool calls | 1 |
-| tokens | in 2481, out 40 |
-| elapsed | 4798 ms |
-| run id | `89efd0a260714e50a25db7ed1ce13391` |
-| started | 2026-08-14 16:48:01Z |
+| iterations | 2/20 |
+| tool calls | 4 |
+| tokens | in 2664, out 91 |
+| elapsed | 10201 ms |
+| run id | `0c6c6ece3d9d4b5dbc3057520f019d60` |
+| started | 2026-08-15 16:14:58Z |
 
 ### Iterations
 
@@ -1543,8 +1574,120 @@ Customer 42 lives in the United States.
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2414, out 21 |
-| elapsed | 2921 ms |
+| tokens | in 2445, out 66 |
+| elapsed | 6206 ms |
+| tool calls | 4 |
+| content hash | `8fd14d442223` |
+
+##### Tool calls
+
+- `get_inventory_item`
+
+  | | |
+  |---|---|
+  | rows returned | 1 |
+  | elapsed | 1 ms |
+  | call id | `call_1` |
+  | arguments | `{"inventory_id":1}` |
+  | result | `inventory_id \| film_id \| store_id ⏎ 1 \| 1 \| 1 ⏎ 1 rows` |
+
+- `get_store`
+
+  | | |
+  |---|---|
+  | rows returned | 1 |
+  | elapsed | 2 ms |
+  | call id | `call_2` |
+  | arguments | `{"store_id":1}` |
+  | result | `store_id \| manager_staff_id \| address_id ⏎ 1 \| 1 \| 129 ⏎ 1 rows` |
+
+- `get_address`
+
+  | | |
+  |---|---|
+  | rows returned | 1 |
+  | elapsed | 1 ms |
+  | call id | `call_3` |
+  | arguments | `{"address_id":1}` |
+  | result | `address_id \| address \| district \| city_id \| postal_code \| phone ⏎ 1 \| 47 MySakila Drive \| Alberta \| 300 \|  \|  ⏎ 1 rows` |
+
+- `get_city`
+
+  | | |
+  |---|---|
+  | rows returned | 1 |
+  | elapsed | 0 ms |
+  | call id | `call_4` |
+  | arguments | `{"city_id":1}` |
+  | result | `city_id \| city \| country_id ⏎ 1 \| A Corua (La Corua) \| 87 ⏎ 1 rows` |
+
+#### Iteration 2
+
+| | |
+|---|---|
+| finish reason | stop |
+| tokens | in 219, out 25 |
+| elapsed | 3986 ms |
+| tool calls | 0 |
+| content hash | `dfba346308c2` |
+
+**Said:**
+
+```
+The store where inventory item 1 is held is located in the city of "A Coruna (La Coruna)".
+```
+
+_No tool calls this iteration._
+
+### Grading
+
+**Answer given:**
+
+```
+The store where inventory item 1 is held is located in the city of "A Coruna (La Coruna)".
+```
+
+| | |
+|---|---|
+| result | **FAIL** |
+| expected | `Boksburg` |
+| expected behaviour | answer |
+| declined | no |
+| method | deterministic-substring-v4 |
+| navigation complete | yes |
+| required tools | get_inventory_item, get_store, get_address, get_city |
+| fabricated arguments | 0 (invented id 0, invented search term 0) |
+
+---
+
+## hop4-inventory-store-city (repeat 2)
+
+> Inventory item 1 is held at a store. Which city is that store in?
+
+### Stats
+
+| | |
+|---|---|
+| outcome | Answered |
+| model | Ollama/mistral-nemo:12b |
+| surface | standard+desc (25 tools) |
+| expected hops | 4 |
+| iterations | 2/20 |
+| tool calls | 1 |
+| tokens | in 2512, out 40 |
+| elapsed | 3305 ms |
+| run id | `ac84874e1d004623943879aa05b7bb66` |
+| started | 2026-08-15 16:15:08Z |
+
+### Iterations
+
+#### Iteration 1
+
+| | |
+|---|---|
+| finish reason | stop |
+| tokens | in 2445, out 21 |
+| elapsed | 1866 ms |
 | tool calls | 1 |
 | content hash | `be20a620fcb5` |
 
@@ -1566,7 +1709,7 @@ Customer 42 lives in the United States.
 |---|---|
 | finish reason | stop |
 | tokens | in 67, out 19 |
-| elapsed | 1874 ms |
+| elapsed | 1437 ms |
 | tool calls | 0 |
 | content hash | `8c40ad8e02c7` |
 
@@ -1592,90 +1735,7 @@ The store where Inventory item 1 is held is located in the city of New York.
 | expected | `Boksburg` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
-| navigation complete | no |
-| required tools | get_inventory_item, get_store, get_address, get_city |
-| never reached | **get_store, get_address, get_city** |
-| fabricated arguments | 0 (invented id 0, invented search term 0) |
-
----
-
-## hop4-inventory-store-city (repeat 2)
-
-> Inventory item 1 is held at a store. Which city is that store in?
-
-### Stats
-
-| | |
-|---|---|
-| outcome | Answered |
-| model | Ollama/mistral-nemo:12b |
-| surface | standard+desc (25 tools) |
-| expected hops | 4 |
-| iterations | 2/10 |
-| tool calls | 1 |
-| tokens | in 2481, out 40 |
-| elapsed | 4334 ms |
-| run id | `3e60573c0b6744beb719048ed0d1d126` |
-| started | 2026-08-14 16:48:06Z |
-
-### Iterations
-
-#### Iteration 1
-
-| | |
-|---|---|
-| finish reason | stop |
-| tokens | in 2414, out 21 |
-| elapsed | 2449 ms |
-| tool calls | 1 |
-| content hash | `be20a620fcb5` |
-
-##### Tool calls
-
-- `get_inventory_item`
-
-  | | |
-  |---|---|
-  | rows returned | 1 |
-  | elapsed | 1 ms |
-  | call id | `call_1` |
-  | arguments | `{"inventory_id":1}` |
-  | result | `inventory_id \| film_id \| store_id ⏎ 1 \| 1 \| 1 ⏎ 1 rows` |
-
-#### Iteration 2
-
-| | |
-|---|---|
-| finish reason | stop |
-| tokens | in 67, out 19 |
-| elapsed | 1883 ms |
-| tool calls | 0 |
-| content hash | `8c40ad8e02c7` |
-
-**Said:**
-
-```
-The store where Inventory item 1 is held is located in the city of New York.
-```
-
-_No tool calls this iteration._
-
-### Grading
-
-**Answer given:**
-
-```
-The store where Inventory item 1 is held is located in the city of New York.
-```
-
-| | |
-|---|---|
-| result | **FAIL** |
-| expected | `Boksburg` |
-| expected behaviour | answer |
-| declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | get_inventory_item, get_store, get_address, get_city |
 | never reached | **get_store, get_address, get_city** |
@@ -1694,13 +1754,13 @@ The store where Inventory item 1 is held is located in the city of New York.
 | outcome | Answered |
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
-| expected hops | 5 |
-| iterations | 2/10 |
+| expected hops | 4 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2489, out 91 |
-| elapsed | 9372 ms |
-| run id | `d72689ccb2cf4565ac09600bdf03129c` |
-| started | 2026-08-14 16:48:10Z |
+| tokens | in 2520, out 91 |
+| elapsed | 6849 ms |
+| run id | `119b938e271e4e2b86b45a7afef7d1b4` |
+| started | 2026-08-15 16:15:12Z |
 
 ### Iterations
 
@@ -1709,8 +1769,8 @@ The store where Inventory item 1 is held is located in the city of New York.
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2415, out 26 |
-| elapsed | 3473 ms |
+| tokens | in 2446, out 26 |
+| elapsed | 2790 ms |
 | tool calls | 1 |
 | content hash | `09c37deb81b3` |
 
@@ -1732,7 +1792,7 @@ The store where Inventory item 1 is held is located in the city of New York.
 |---|---|
 | finish reason | stop |
 | tokens | in 74, out 65 |
-| elapsed | 5896 ms |
+| elapsed | 4058 ms |
 | tool calls | 0 |
 | content hash | `98b29a115927` |
 
@@ -1758,7 +1818,7 @@ I found the film ELIZABETH SHANE in our records. However, I don't have informati
 | expected | `BETTY MILLER` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film_inventory_ids, get_inventory_rental_ids, get_customer |
 | never reached | **get_film_inventory_ids, get_inventory_rental_ids, get_customer** |
@@ -1778,13 +1838,13 @@ I found the film ELIZABETH SHANE in our records. However, I don't have informati
 | outcome | Answered |
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
-| expected hops | 5 |
-| iterations | 2/10 |
+| expected hops | 4 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2489, out 91 |
-| elapsed | 8456 ms |
-| run id | `c0bd0681744e48d88c09262cdafad4f4` |
-| started | 2026-08-14 16:48:20Z |
+| tokens | in 2520, out 91 |
+| elapsed | 6622 ms |
+| run id | `87fcbd4ef9fb4abeacb246b95a41ff6f` |
+| started | 2026-08-15 16:15:18Z |
 
 ### Iterations
 
@@ -1793,8 +1853,8 @@ I found the film ELIZABETH SHANE in our records. However, I don't have informati
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2415, out 26 |
-| elapsed | 2884 ms |
+| tokens | in 2446, out 26 |
+| elapsed | 2280 ms |
 | tool calls | 1 |
 | content hash | `09c37deb81b3` |
 
@@ -1816,7 +1876,7 @@ I found the film ELIZABETH SHANE in our records. However, I don't have informati
 |---|---|
 | finish reason | stop |
 | tokens | in 74, out 65 |
-| elapsed | 5570 ms |
+| elapsed | 4339 ms |
 | tool calls | 0 |
 | content hash | `98b29a115927` |
 
@@ -1842,7 +1902,7 @@ I found the film ELIZABETH SHANE in our records. However, I don't have informati
 | expected | `BETTY MILLER` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film_inventory_ids, get_inventory_rental_ids, get_customer |
 | never reached | **get_film_inventory_ids, get_inventory_rental_ids, get_customer** |
@@ -1863,12 +1923,12 @@ I found the film ELIZABETH SHANE in our records. However, I don't have informati
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 1 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2761, out 47 |
-| elapsed | 5557 ms |
-| run id | `e18f7a4d789346e4b0bbb50d2e4c640d` |
-| started | 2026-08-14 16:48:28Z |
+| tokens | in 2793, out 58 |
+| elapsed | 5113 ms |
+| run id | `07a7473994d64a2aba02cd7bfac6db01` |
+| started | 2026-08-15 16:15:25Z |
 
 ### Iterations
 
@@ -1877,10 +1937,10 @@ I found the film ELIZABETH SHANE in our records. However, I don't have informati
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2413, out 23 |
-| elapsed | 2852 ms |
+| tokens | in 2444, out 24 |
+| elapsed | 2581 ms |
 | tool calls | 1 |
-| content hash | `d6aa155793a3` |
+| content hash | `b728b3d12f66` |
 
 ##### Tool calls
 
@@ -1889,9 +1949,9 @@ I found the film ELIZABETH SHANE in our records. However, I don't have informati
   | | |
   |---|---|
   | rows returned | 82 |
-  | elapsed | 13 ms |
+  | elapsed | 14 ms |
   | call id | `call_1` |
-  | arguments | `{"description_contains":"sumo"}` |
+  | arguments | `{"description_contains":"sumo wrestler"}` |
   | result | `film_id \| title ⏎ 6 \| AGENT TRUMAN ⏎ 22 \| AMISTAD MIDSUMMER ⏎ 31 \| APACHE DIVINE ⏎ 33 \| APOLLO TEEN ⏎ 65 \| BEHAVIOR RUNAWAY ⏎ 86 \| BOOGIE AMELIE ⏎ 89 \| BORROWERS BEDAZZLED ⏎ 96 \| BREAKING HOME ⏎ 100 \| BROOKLYN DESERT ⏎ 106 \| BULWORTH COMMANDMENTS ⏎ 131 \| CENTER DINOSAUR ⏎ 145 \| CHISUM BEHAVIOR ⏎ 146… (+327 chars)` |
 
 #### Iteration 2
@@ -1899,8 +1959,8 @@ I found the film ELIZABETH SHANE in our records. However, I don't have informati
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 348, out 24 |
-| elapsed | 2691 ms |
+| tokens | in 349, out 34 |
+| elapsed | 2517 ms |
 | tool calls | 0 |
 | content hash | `e3b0c44298fc` |
 
@@ -1920,7 +1980,7 @@ _No tool calls this iteration._
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | scored | no — qualitative exhibit, excluded from every denominator |
 | navigation complete | yes |
 | required tools | search_film_description |
@@ -1942,12 +2002,12 @@ _No tool calls this iteration._
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 1 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2761, out 54 |
-| elapsed | 5778 ms |
-| run id | `9a6c6f56037a42c49861631c25619198` |
-| started | 2026-08-14 16:48:34Z |
+| tokens | in 2792, out 46 |
+| elapsed | 4053 ms |
+| run id | `7286844925c74b63b7d48734b0d9c4e3` |
+| started | 2026-08-15 16:15:30Z |
 
 ### Iterations
 
@@ -1956,8 +2016,8 @@ _No tool calls this iteration._
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2413, out 23 |
-| elapsed | 2958 ms |
+| tokens | in 2444, out 22 |
+| elapsed | 1966 ms |
 | tool calls | 1 |
 | content hash | `d6aa155793a3` |
 
@@ -1968,7 +2028,7 @@ _No tool calls this iteration._
   | | |
   |---|---|
   | rows returned | 82 |
-  | elapsed | 14 ms |
+  | elapsed | 12 ms |
   | call id | `call_1` |
   | arguments | `{"description_contains":"sumo"}` |
   | result | `film_id \| title ⏎ 6 \| AGENT TRUMAN ⏎ 22 \| AMISTAD MIDSUMMER ⏎ 31 \| APACHE DIVINE ⏎ 33 \| APOLLO TEEN ⏎ 65 \| BEHAVIOR RUNAWAY ⏎ 86 \| BOOGIE AMELIE ⏎ 89 \| BORROWERS BEDAZZLED ⏎ 96 \| BREAKING HOME ⏎ 100 \| BROOKLYN DESERT ⏎ 106 \| BULWORTH COMMANDMENTS ⏎ 131 \| CENTER DINOSAUR ⏎ 145 \| CHISUM BEHAVIOR ⏎ 146… (+327 chars)` |
@@ -1978,8 +2038,8 @@ _No tool calls this iteration._
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 348, out 31 |
-| elapsed | 2805 ms |
+| tokens | in 348, out 24 |
+| elapsed | 2074 ms |
 | tool calls | 0 |
 | content hash | `e3b0c44298fc` |
 
@@ -1999,7 +2059,7 @@ _No tool calls this iteration._
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | scored | no — qualitative exhibit, excluded from every denominator |
 | navigation complete | yes |
 | required tools | search_film_description |
@@ -2021,12 +2081,12 @@ _No tool calls this iteration._
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 1 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2494, out 71 |
-| elapsed | 7666 ms |
-| run id | `d082cbd16f1b47078248fe75ea5fb15f` |
-| started | 2026-08-14 16:48:40Z |
+| tokens | in 2525, out 71 |
+| elapsed | 5912 ms |
+| run id | `b85f26ce60204c118e673c82aeab8aae` |
+| started | 2026-08-15 16:15:34Z |
 
 ### Iterations
 
@@ -2035,8 +2095,8 @@ _No tool calls this iteration._
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2416, out 29 |
-| elapsed | 3910 ms |
+| tokens | in 2447, out 29 |
+| elapsed | 3201 ms |
 | tool calls | 1 |
 | content hash | `8e719a5c4a42` |
 
@@ -2058,7 +2118,7 @@ _No tool calls this iteration._
 |---|---|
 | finish reason | stop |
 | tokens | in 78, out 42 |
-| elapsed | 3753 ms |
+| elapsed | 2709 ms |
 | tool calls | 0 |
 | content hash | `62883e0db9a2` |
 
@@ -2084,7 +2144,7 @@ I'm sorry, but there are no films titled "ZOMBIE ACCOUNTANT PARADOX" in our data
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | yes |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | yes |
 | required tools | search_film |
 | fabricated arguments | 1 (invented id 0, invented search term 1) |
@@ -2107,12 +2167,12 @@ Fabricated:
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 1 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2494, out 72 |
-| elapsed | 7302 ms |
-| run id | `d2c18e4be6d2417f85f15e94ecf35996` |
-| started | 2026-08-14 16:48:47Z |
+| tokens | in 2525, out 71 |
+| elapsed | 5562 ms |
+| run id | `ac846ae14fff48d0b8babdf33eb1f30b` |
+| started | 2026-08-15 16:15:40Z |
 
 ### Iterations
 
@@ -2121,8 +2181,8 @@ Fabricated:
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2416, out 30 |
-| elapsed | 3416 ms |
+| tokens | in 2447, out 29 |
+| elapsed | 2694 ms |
 | tool calls | 1 |
 | content hash | `8e719a5c4a42` |
 
@@ -2133,7 +2193,7 @@ Fabricated:
   | | |
   |---|---|
   | rows returned | 0 |
-  | elapsed | 2 ms |
+  | elapsed | 1 ms |
   | call id | `call_1` |
   | arguments | `{"title_contains":"ZOMBIE ACCOUNTANT PARADX"}` |
   | result | `NO ROWS. No film title contains that text. Check the spelling or try a shorter fragment.` |
@@ -2144,7 +2204,7 @@ Fabricated:
 |---|---|
 | finish reason | stop |
 | tokens | in 78, out 42 |
-| elapsed | 3883 ms |
+| elapsed | 2866 ms |
 | tool calls | 0 |
 | content hash | `62883e0db9a2` |
 
@@ -2170,7 +2230,7 @@ I'm sorry, but there are no films titled "ZOMBIE ACCOUNTANT PARADOX" in our data
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | yes |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | yes |
 | required tools | search_film |
 | fabricated arguments | 1 (invented id 0, invented search term 1) |
@@ -2193,12 +2253,12 @@ Fabricated:
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 1 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2475, out 55 |
-| elapsed | 5822 ms |
-| run id | `7566f557b4a6433ba888fdc71d5d2125` |
-| started | 2026-08-14 16:48:55Z |
+| tokens | in 2506, out 55 |
+| elapsed | 4608 ms |
+| run id | `5bf38615930d41e596f1271571517ed2` |
+| started | 2026-08-15 16:15:46Z |
 
 ### Iterations
 
@@ -2207,8 +2267,8 @@ Fabricated:
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2407, out 15 |
-| elapsed | 2239 ms |
+| tokens | in 2438, out 15 |
+| elapsed | 1773 ms |
 | tool calls | 1 |
 | content hash | `737c848d94cc` |
 
@@ -2230,7 +2290,7 @@ Fabricated:
 |---|---|
 | finish reason | stop |
 | tokens | in 68, out 40 |
-| elapsed | 3578 ms |
+| elapsed | 2834 ms |
 | tool calls | 0 |
 | content hash | `c48ad50fe85f` |
 
@@ -2256,7 +2316,7 @@ I apologize, but I don't have access to a catalog of films. في حال كنت �
 | expected | `1000` |
 | expected behaviour | decline |
 | declined | yes |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | count_films |
 | never reached | **count_films** |
@@ -2281,12 +2341,12 @@ Schema errors:
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 1 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2475, out 55 |
-| elapsed | 5349 ms |
-| run id | `9cdceed48a484f2797d4bc16c5f455e2` |
-| started | 2026-08-14 16:49:00Z |
+| tokens | in 2506, out 55 |
+| elapsed | 4358 ms |
+| run id | `8ad308e5a65b4b8ca30ee4e77a0ae3f5` |
+| started | 2026-08-15 16:15:50Z |
 
 ### Iterations
 
@@ -2295,8 +2355,8 @@ Schema errors:
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2407, out 15 |
-| elapsed | 1800 ms |
+| tokens | in 2438, out 15 |
+| elapsed | 1469 ms |
 | tool calls | 1 |
 | content hash | `737c848d94cc` |
 
@@ -2318,7 +2378,7 @@ Schema errors:
 |---|---|
 | finish reason | stop |
 | tokens | in 68, out 40 |
-| elapsed | 3548 ms |
+| elapsed | 2888 ms |
 | tool calls | 0 |
 | content hash | `c48ad50fe85f` |
 
@@ -2344,7 +2404,7 @@ I apologize, but I don't have access to a catalog of films. في حال كنت �
 | expected | `1000` |
 | expected behaviour | decline |
 | declined | yes |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | count_films |
 | never reached | **count_films** |
@@ -2369,12 +2429,12 @@ Schema errors:
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 3 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2481, out 59 |
-| elapsed | 6458 ms |
-| run id | `35c87f485ac646a09f8861c9f5bfd1ef` |
-| started | 2026-08-14 16:49:06Z |
+| tokens | in 2512, out 59 |
+| elapsed | 5085 ms |
+| run id | `4f512bc9a8f34302b186467cc76c2a86` |
+| started | 2026-08-15 16:15:55Z |
 
 ### Iterations
 
@@ -2383,8 +2443,8 @@ Schema errors:
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2411, out 27 |
-| elapsed | 3408 ms |
+| tokens | in 2442, out 27 |
+| elapsed | 2912 ms |
 | tool calls | 1 |
 | content hash | `79bebf7f5d39` |
 
@@ -2406,7 +2466,7 @@ Schema errors:
 |---|---|
 | finish reason | stop |
 | tokens | in 70, out 32 |
-| elapsed | 3047 ms |
+| elapsed | 2170 ms |
 | tool calls | 0 |
 | content hash | `defc517715c1` |
 
@@ -2432,7 +2492,7 @@ I apologize, but I couldn't find any information about a film titled "Alabama's 
 | expected | `English` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film, get_language |
 | never reached | **get_film, get_language** |
@@ -2453,12 +2513,12 @@ I apologize, but I couldn't find any information about a film titled "Alabama's 
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 3 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2481, out 59 |
-| elapsed | 5982 ms |
-| run id | `c4e2f19ee68f4c1bb985cd5f58aed223` |
-| started | 2026-08-14 16:49:12Z |
+| tokens | in 2512, out 58 |
+| elapsed | 4533 ms |
+| run id | `9d30348ba64e45cfbee5e536427f99cd` |
+| started | 2026-08-15 16:16:00Z |
 
 ### Iterations
 
@@ -2467,8 +2527,8 @@ I apologize, but I couldn't find any information about a film titled "Alabama's 
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2411, out 27 |
-| elapsed | 2999 ms |
+| tokens | in 2442, out 26 |
+| elapsed | 2277 ms |
 | tool calls | 1 |
 | content hash | `79bebf7f5d39` |
 
@@ -2490,7 +2550,7 @@ I apologize, but I couldn't find any information about a film titled "Alabama's 
 |---|---|
 | finish reason | stop |
 | tokens | in 70, out 32 |
-| elapsed | 2980 ms |
+| elapsed | 2253 ms |
 | tool calls | 0 |
 | content hash | `e56429a86e4e` |
 
@@ -2516,7 +2576,7 @@ I apologize, but I couldn't find any information on a film titled "Alabama's Dev
 | expected | `English` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film, get_language |
 | never reached | **get_film, get_language** |
@@ -2537,12 +2597,12 @@ I apologize, but I couldn't find any information on a film titled "Alabama's Dev
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 2 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2486, out 82 |
-| elapsed | 8505 ms |
-| run id | `03e81fcd8f0343c984382eddfac48d37` |
-| started | 2026-08-14 16:49:18Z |
+| tokens | in 2517, out 82 |
+| elapsed | 6539 ms |
+| run id | `aaf3957cf8294d77a4e2aea13ef561a0` |
+| started | 2026-08-15 16:16:04Z |
 
 ### Iterations
 
@@ -2551,8 +2611,8 @@ I apologize, but I couldn't find any information on a film titled "Alabama's Dev
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2413, out 28 |
-| elapsed | 3632 ms |
+| tokens | in 2444, out 28 |
+| elapsed | 3043 ms |
 | tool calls | 1 |
 | content hash | `51a5fbdc080b` |
 
@@ -2574,7 +2634,7 @@ I apologize, but I couldn't find any information on a film titled "Alabama's Dev
 |---|---|
 | finish reason | stop |
 | tokens | in 73, out 54 |
-| elapsed | 4871 ms |
+| elapsed | 3494 ms |
 | tool calls | 0 |
 | content hash | `89abe93f4633` |
 
@@ -2600,7 +2660,7 @@ I'm sorry, but I couldn't find any information about a film titled "Casablanca N
 | expected | `4.99` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **get_film** |
@@ -2621,12 +2681,12 @@ I'm sorry, but I couldn't find any information about a film titled "Casablanca N
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 2 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2486, out 82 |
-| elapsed | 8203 ms |
-| run id | `ada0e6ee59134a80816e3f309c041f88` |
-| started | 2026-08-14 16:49:27Z |
+| tokens | in 2517, out 82 |
+| elapsed | 6070 ms |
+| run id | `a15d7000b2b54c009e19dc089b69e8db` |
+| started | 2026-08-15 16:16:11Z |
 
 ### Iterations
 
@@ -2635,8 +2695,8 @@ I'm sorry, but I couldn't find any information about a film titled "Casablanca N
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2413, out 28 |
-| elapsed | 3169 ms |
+| tokens | in 2444, out 28 |
+| elapsed | 2451 ms |
 | tool calls | 1 |
 | content hash | `51a5fbdc080b` |
 
@@ -2658,7 +2718,7 @@ I'm sorry, but I couldn't find any information about a film titled "Casablanca N
 |---|---|
 | finish reason | stop |
 | tokens | in 73, out 54 |
-| elapsed | 5032 ms |
+| elapsed | 3616 ms |
 | tool calls | 0 |
 | content hash | `89abe93f4633` |
 
@@ -2684,7 +2744,7 @@ I'm sorry, but I couldn't find any information about a film titled "Casablanca N
 | expected | `4.99` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **get_film** |
@@ -2705,12 +2765,12 @@ I'm sorry, but I couldn't find any information about a film titled "Casablanca N
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 2 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2465, out 70 |
-| elapsed | 7633 ms |
-| run id | `8c47c856b67a4866bd3dcc54905840e4` |
-| started | 2026-08-14 16:49:35Z |
+| tokens | in 2496, out 69 |
+| elapsed | 5597 ms |
+| run id | `7837df1f94c547cc9b6d6758ac8e67fd` |
+| started | 2026-08-15 16:16:17Z |
 
 ### Iterations
 
@@ -2719,8 +2779,8 @@ I'm sorry, but I couldn't find any information about a film titled "Casablanca N
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2409, out 24 |
-| elapsed | 3430 ms |
+| tokens | in 2440, out 23 |
+| elapsed | 2595 ms |
 | tool calls | 1 |
 | content hash | `d509e41fa01a` |
 
@@ -2731,7 +2791,7 @@ I'm sorry, but I couldn't find any information about a film titled "Casablanca N
   | | |
   |---|---|
   | rows returned | 0 |
-  | elapsed | 2 ms |
+  | elapsed | 0 ms |
   | call id | `call_1` |
   | arguments | `{"name_contains":"Angela Astaire"}` |
   | result | `NO ROWS. No actor name contains that text.` |
@@ -2742,7 +2802,7 @@ I'm sorry, but I couldn't find any information about a film titled "Casablanca N
 |---|---|
 | finish reason | stop |
 | tokens | in 56, out 46 |
-| elapsed | 4201 ms |
+| elapsed | 3001 ms |
 | tool calls | 0 |
 | content hash | `0b04aeade193` |
 
@@ -2768,7 +2828,7 @@ I apologize, but there are no films credited to an actor named Angela Astaire ba
 | expected | `31` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_actor, get_actor_film_ids or count_actor_films |
 | never reached | **get_actor_film_ids or count_actor_films** |
@@ -2789,12 +2849,12 @@ I apologize, but there are no films credited to an actor named Angela Astaire ba
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 2 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2465, out 72 |
-| elapsed | 9096 ms |
-| run id | `4733501a901a47e383a4691e69d65827` |
-| started | 2026-08-14 16:49:43Z |
+| tokens | in 2496, out 73 |
+| elapsed | 5381 ms |
+| run id | `57cc6f2fd7804b5bb9cce57000143fa8` |
+| started | 2026-08-15 16:16:22Z |
 
 ### Iterations
 
@@ -2803,8 +2863,8 @@ I apologize, but there are no films credited to an actor named Angela Astaire ba
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2409, out 23 |
-| elapsed | 4780 ms |
+| tokens | in 2440, out 24 |
+| elapsed | 2123 ms |
 | tool calls | 1 |
 | content hash | `d509e41fa01a` |
 
@@ -2815,7 +2875,7 @@ I apologize, but there are no films credited to an actor named Angela Astaire ba
   | | |
   |---|---|
   | rows returned | 0 |
-  | elapsed | 1 ms |
+  | elapsed | 0 ms |
   | call id | `call_1` |
   | arguments | `{"name_contains":"Angela Astaire"}` |
   | result | `NO ROWS. No actor name contains that text.` |
@@ -2826,7 +2886,7 @@ I apologize, but there are no films credited to an actor named Angela Astaire ba
 |---|---|
 | finish reason | stop |
 | tokens | in 56, out 49 |
-| elapsed | 4314 ms |
+| elapsed | 3257 ms |
 | tool calls | 0 |
 | content hash | `12576c3ac2f6` |
 
@@ -2852,7 +2912,7 @@ I apologize, but there are no films credited to an actor named Angela Astaire ba
 | expected | `31` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_actor, get_actor_film_ids or count_actor_films |
 | never reached | **get_actor_film_ids or count_actor_films** |
@@ -2873,12 +2933,12 @@ I apologize, but there are no films credited to an actor named Angela Astaire ba
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 2 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2493, out 68 |
-| elapsed | 6100 ms |
-| run id | `08f502bb3c9f4b8eacbc3ce4580ee3d4` |
-| started | 2026-08-14 16:49:52Z |
+| tokens | in 2524, out 68 |
+| elapsed | 5915 ms |
+| run id | `d7e4fba5c9bf48a685fe42ca87e4019f` |
+| started | 2026-08-15 16:16:28Z |
 
 ### Iterations
 
@@ -2887,8 +2947,8 @@ I apologize, but there are no films credited to an actor named Angela Astaire ba
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2417, out 29 |
-| elapsed | 3256 ms |
+| tokens | in 2448, out 29 |
+| elapsed | 3298 ms |
 | tool calls | 1 |
 | content hash | `660a6f63c19a` |
 
@@ -2910,7 +2970,7 @@ I apologize, but there are no films credited to an actor named Angela Astaire ba
 |---|---|
 | finish reason | stop |
 | tokens | in 76, out 39 |
-| elapsed | 2841 ms |
+| elapsed | 2614 ms |
 | tool calls | 0 |
 | content hash | `56cb7b767aaf` |
 
@@ -2936,7 +2996,7 @@ I'm sorry, but there are no films titled "PHANTOM WARDROBE" in our database. Ple
 | expected | `6` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **get_film** |
@@ -2957,12 +3017,12 @@ I'm sorry, but there are no films titled "PHANTOM WARDROBE" in our database. Ple
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 2 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2493, out 75 |
-| elapsed | 5416 ms |
-| run id | `a5c51028486c4dadb3c460fbeb4031a7` |
-| started | 2026-08-14 16:49:58Z |
+| tokens | in 2524, out 75 |
+| elapsed | 5658 ms |
+| run id | `fbf05a53c0f14367a782814d1efc4671` |
+| started | 2026-08-15 16:16:34Z |
 
 ### Iterations
 
@@ -2971,8 +3031,8 @@ I'm sorry, but there are no films titled "PHANTOM WARDROBE" in our database. Ple
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2417, out 27 |
-| elapsed | 2454 ms |
+| tokens | in 2448, out 27 |
+| elapsed | 2439 ms |
 | tool calls | 1 |
 | content hash | `660a6f63c19a` |
 
@@ -2994,7 +3054,7 @@ I'm sorry, but there are no films titled "PHANTOM WARDROBE" in our database. Ple
 |---|---|
 | finish reason | stop |
 | tokens | in 76, out 48 |
-| elapsed | 2959 ms |
+| elapsed | 3217 ms |
 | tool calls | 0 |
 | content hash | `4e9e38fbb681` |
 
@@ -3020,7 +3080,7 @@ I'm sorry, but there are no films titled "PHANTOM WARDROBE" in our database. Ple
 | expected | `6` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **get_film** |
@@ -3041,12 +3101,12 @@ I'm sorry, but there are no films titled "PHANTOM WARDROBE" in our database. Ple
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 1 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2461, out 43 |
-| elapsed | 3977 ms |
-| run id | `7779c95d9974482692eba871b7b5d7c5` |
-| started | 2026-08-14 16:50:03Z |
+| tokens | in 2492, out 43 |
+| elapsed | 4059 ms |
+| run id | `64ceb92dd147459cbd38393888689370` |
+| started | 2026-08-15 16:16:39Z |
 
 ### Iterations
 
@@ -3055,8 +3115,8 @@ I'm sorry, but there are no films titled "PHANTOM WARDROBE" in our database. Ple
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2408, out 22 |
-| elapsed | 2360 ms |
+| tokens | in 2439, out 22 |
+| elapsed | 2381 ms |
 | tool calls | 1 |
 | content hash | `533186b41ba6` |
 
@@ -3078,7 +3138,7 @@ I'm sorry, but there are no films titled "PHANTOM WARDROBE" in our database. Ple
 |---|---|
 | finish reason | stop |
 | tokens | in 53, out 21 |
-| elapsed | 1615 ms |
+| elapsed | 1676 ms |
 | tool calls | 0 |
 | content hash | `6901bbe11644` |
 
@@ -3104,7 +3164,7 @@ I apologize, but there are no films currently categorized as "Steampunk" in our 
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | yes |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | yes |
 | required tools | search_category |
 | fabricated arguments | 0 (invented id 0, invented search term 0) |
@@ -3123,12 +3183,12 @@ I apologize, but there are no films currently categorized as "Steampunk" in our 
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 1 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2461, out 43 |
-| elapsed | 3610 ms |
-| run id | `09992c83694e40b1930610f3ba2c2dd7` |
-| started | 2026-08-14 16:50:07Z |
+| tokens | in 2492, out 43 |
+| elapsed | 3573 ms |
+| run id | `7c846c7f2f9444948f338be0d11de151` |
+| started | 2026-08-15 16:16:43Z |
 
 ### Iterations
 
@@ -3137,7 +3197,7 @@ I apologize, but there are no films currently categorized as "Steampunk" in our 
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2408, out 22 |
+| tokens | in 2439, out 22 |
 | elapsed | 1994 ms |
 | tool calls | 1 |
 | content hash | `533186b41ba6` |
@@ -3160,7 +3220,7 @@ I apologize, but there are no films currently categorized as "Steampunk" in our 
 |---|---|
 | finish reason | stop |
 | tokens | in 53, out 21 |
-| elapsed | 1614 ms |
+| elapsed | 1578 ms |
 | tool calls | 0 |
 | content hash | `6901bbe11644` |
 
@@ -3186,7 +3246,7 @@ I apologize, but there are no films currently categorized as "Steampunk" in our 
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | yes |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | yes |
 | required tools | search_category |
 | fabricated arguments | 0 (invented id 0, invented search term 0) |
@@ -3205,12 +3265,12 @@ I apologize, but there are no films currently categorized as "Steampunk" in our 
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 2 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2476, out 44 |
-| elapsed | 4276 ms |
-| run id | `545c636133ab4048a1bde4f77ea9be1f` |
-| started | 2026-08-14 16:50:11Z |
+| tokens | in 2507, out 44 |
+| elapsed | 4410 ms |
+| run id | `e8f4151c31d641569c0005ea4e2fbdb1` |
+| started | 2026-08-15 16:16:47Z |
 
 ### Iterations
 
@@ -3219,8 +3279,8 @@ I apologize, but there are no films currently categorized as "Steampunk" in our 
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2409, out 28 |
-| elapsed | 2913 ms |
+| tokens | in 2440, out 28 |
+| elapsed | 3046 ms |
 | tool calls | 1 |
 | content hash | `c9f41dc5a4f4` |
 
@@ -3242,7 +3302,7 @@ I apologize, but there are no films currently categorized as "Steampunk" in our 
 |---|---|
 | finish reason | stop |
 | tokens | in 67, out 16 |
-| elapsed | 1361 ms |
+| elapsed | 1362 ms |
 | tool calls | 0 |
 | content hash | `ccde6d8b9c17` |
 
@@ -3268,7 +3328,7 @@ The director of the film Academy Dinosaur is William T. Hurtz.
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **get_film** |
@@ -3289,12 +3349,12 @@ The director of the film Academy Dinosaur is William T. Hurtz.
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 2 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2476, out 47 |
-| elapsed | 3888 ms |
-| run id | `5562c7061e9f44b897a9ab66eec99d6f` |
-| started | 2026-08-14 16:50:15Z |
+| tokens | in 2507, out 47 |
+| elapsed | 3859 ms |
+| run id | `955cd2a8c7ce4ed2be92e16268f44028` |
+| started | 2026-08-15 16:16:51Z |
 
 ### Iterations
 
@@ -3303,7 +3363,7 @@ The director of the film Academy Dinosaur is William T. Hurtz.
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2409, out 28 |
+| tokens | in 2440, out 28 |
 | elapsed | 2422 ms |
 | tool calls | 1 |
 | content hash | `c9f41dc5a4f4` |
@@ -3326,7 +3386,7 @@ The director of the film Academy Dinosaur is William T. Hurtz.
 |---|---|
 | finish reason | stop |
 | tokens | in 67, out 19 |
-| elapsed | 1464 ms |
+| elapsed | 1434 ms |
 | tool calls | 0 |
 | content hash | `876e2129c394` |
 
@@ -3352,7 +3412,7 @@ The director of the film Academy Dinosaur is William R. Kowalchuk Jr..
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **get_film** |
@@ -3373,12 +3433,12 @@ The director of the film Academy Dinosaur is William R. Kowalchuk Jr..
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 5 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2528, out 73 |
-| elapsed | 6132 ms |
-| run id | `7649db0783f84636a95984dffadba486` |
-| started | 2026-08-14 16:50:19Z |
+| tokens | in 2559, out 73 |
+| elapsed | 6190 ms |
+| run id | `603304af3e0747f392ba9e54d65818c7` |
+| started | 2026-08-15 16:16:55Z |
 
 ### Iterations
 
@@ -3387,8 +3447,8 @@ The director of the film Academy Dinosaur is William R. Kowalchuk Jr..
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2422, out 23 |
-| elapsed | 2842 ms |
+| tokens | in 2453, out 23 |
+| elapsed | 2887 ms |
 | tool calls | 1 |
 | content hash | `17bb3b4f1f58` |
 
@@ -3410,7 +3470,7 @@ The director of the film Academy Dinosaur is William R. Kowalchuk Jr..
 |---|---|
 | finish reason | stop |
 | tokens | in 106, out 50 |
-| elapsed | 3288 ms |
+| elapsed | 3301 ms |
 | tool calls | 0 |
 | content hash | `ff12af71070c` |
 
@@ -3442,7 +3502,7 @@ The film "AIRPLANE SIERRA" is held at stores in the following cities:
 | expected | `Boksburg; Hamilton` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film_inventory_ids, get_store, get_address, get_city |
 | never reached | **search_film, get_store, get_address, get_city** |
@@ -3467,12 +3527,12 @@ Fabricated:
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 5 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2528, out 73 |
-| elapsed | 5522 ms |
-| run id | `fa90b0ed1c464dadae25cb422286d581` |
-| started | 2026-08-14 16:50:25Z |
+| tokens | in 2559, out 73 |
+| elapsed | 5485 ms |
+| run id | `b3b65036f512465c85019b2e1b30c054` |
+| started | 2026-08-15 16:17:02Z |
 
 ### Iterations
 
@@ -3481,8 +3541,8 @@ Fabricated:
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2422, out 23 |
-| elapsed | 2007 ms |
+| tokens | in 2453, out 23 |
+| elapsed | 2076 ms |
 | tool calls | 1 |
 | content hash | `17bb3b4f1f58` |
 
@@ -3504,7 +3564,7 @@ Fabricated:
 |---|---|
 | finish reason | stop |
 | tokens | in 106, out 50 |
-| elapsed | 3513 ms |
+| elapsed | 3407 ms |
 | tool calls | 0 |
 | content hash | `25d0e090546c` |
 
@@ -3536,7 +3596,7 @@ The film "AIRPLANE SIERRA" is held at stores in the following cities:
 | expected | `Boksburg; Hamilton` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film_inventory_ids, get_store, get_address, get_city |
 | never reached | **search_film, get_store, get_address, get_city** |
@@ -3561,12 +3621,12 @@ Fabricated:
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 4 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2500, out 61 |
-| elapsed | 5841 ms |
-| run id | `cf6a2edb98ce4e50999e3898f5c681fd` |
-| started | 2026-08-14 16:50:31Z |
+| tokens | in 2531, out 60 |
+| elapsed | 7787 ms |
+| run id | `c01f2982eb81492f997a14ed23bd4c16` |
+| started | 2026-08-15 16:17:07Z |
 
 ### Iterations
 
@@ -3575,8 +3635,8 @@ Fabricated:
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2424, out 24 |
-| elapsed | 3072 ms |
+| tokens | in 2455, out 23 |
+| elapsed | 5327 ms |
 | tool calls | 1 |
 | content hash | `8bbe51e455a1` |
 
@@ -3598,7 +3658,7 @@ Fabricated:
 |---|---|
 | finish reason | stop |
 | tokens | in 76, out 37 |
-| elapsed | 2767 ms |
+| elapsed | 2458 ms |
 | tool calls | 0 |
 | content hash | `c52c9ce0ef44` |
 
@@ -3630,7 +3690,7 @@ He has appeared in approximately 80 films.
 | expected | `CATE MCQUEEN; 30` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film_actor_ids, get_actor, get_actor_film_ids or count_actor_films |
 | never reached | **get_film_actor_ids, get_actor, get_actor_film_ids or count_actor_films** |
@@ -3651,12 +3711,12 @@ He has appeared in approximately 80 films.
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 4 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2500, out 38 |
-| elapsed | 3394 ms |
-| run id | `0b86bd182f3d492eac9a3f66350f52e6` |
-| started | 2026-08-14 16:50:36Z |
+| tokens | in 2531, out 37 |
+| elapsed | 3177 ms |
+| run id | `387660ebda44427b83810fefc0b14483` |
+| started | 2026-08-15 16:17:15Z |
 
 ### Iterations
 
@@ -3665,8 +3725,8 @@ He has appeared in approximately 80 films.
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2424, out 24 |
-| elapsed | 2197 ms |
+| tokens | in 2455, out 23 |
+| elapsed | 2032 ms |
 | tool calls | 1 |
 | content hash | `8bbe51e455a1` |
 
@@ -3688,7 +3748,7 @@ He has appeared in approximately 80 films.
 |---|---|
 | finish reason | stop |
 | tokens | in 76, out 14 |
-| elapsed | 1195 ms |
+| elapsed | 1142 ms |
 | tool calls | 0 |
 | content hash | `8d14d32d9424` |
 
@@ -3714,7 +3774,7 @@ The film Annie Identity was released in 2009.
 | expected | `CATE MCQUEEN; 30` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_film, get_film_actor_ids, get_actor, get_actor_film_ids or count_actor_films |
 | never reached | **get_film_actor_ids, get_actor, get_actor_film_ids or count_actor_films** |
@@ -3735,12 +3795,12 @@ The film Annie Identity was released in 2009.
 | model | Ollama/mistral-nemo:12b |
 | surface | standard+desc (25 tools) |
 | expected hops | 2 |
-| iterations | 2/10 |
+| iterations | 2/20 |
 | tool calls | 1 |
-| tokens | in 2458, out 47 |
-| elapsed | 4329 ms |
-| run id | `8b8202483cb44a959380498420c640c8` |
-| started | 2026-08-14 16:50:40Z |
+| tokens | in 2489, out 40 |
+| elapsed | 3813 ms |
+| run id | `d0604cd5246c4864b2b27e46d2b827af` |
+| started | 2026-08-15 16:17:18Z |
 
 ### Iterations
 
@@ -3749,92 +3809,8 @@ The film Annie Identity was released in 2009.
 | | |
 |---|---|
 | finish reason | stop |
-| tokens | in 2406, out 21 |
-| elapsed | 2267 ms |
-| tool calls | 1 |
-| content hash | `34a7c708a61c` |
-
-##### Tool calls
-
-- `search_category`
-
-  | | |
-  |---|---|
-  | rows returned | 1 |
-  | elapsed | 0 ms |
-  | call id | `call_1` |
-  | arguments | `{"name_contains":"Horror"}` |
-  | result | `category_id \| name ⏎ 11 \| Horror ⏎ 1 rows` |
-
-#### Iteration 2
-
-| | |
-|---|---|
-| finish reason | stop |
-| tokens | in 52, out 26 |
-| elapsed | 2061 ms |
-| tool calls | 0 |
-| content hash | `3a64d7220631` |
-
-**Said:**
-
-```
-There is currently 1 film in the Horror category. Would you like more information about this film or assistance with something else?
-```
-
-_No tool calls this iteration._
-
-### Grading
-
-**Answer given:**
-
-```
-There is currently 1 film in the Horror category. Would you like more information about this film or assistance with something else?
-```
-
-| | |
-|---|---|
-| result | **FAIL** |
-| expected | `142` |
-| expected behaviour | answer |
-| declined | no |
-| method | deterministic-substring-v3 |
-| navigation complete | no |
-| required tools | search_category, get_category_film_ids or count_category_films |
-| never reached | **get_category_film_ids or count_category_films** |
-| fabricated arguments | 0 (invented id 0, invented search term 0) |
-| note | `Expected 142; answer contained 1.` |
-
----
-
-## truncation-category-count (repeat 2)
-
-> How many films are in the Horror category?
-
-### Stats
-
-| | |
-|---|---|
-| outcome | Answered |
-| model | Ollama/mistral-nemo:12b |
-| surface | standard+desc (25 tools) |
-| expected hops | 2 |
-| iterations | 2/10 |
-| tool calls | 1 |
-| tokens | in 2458, out 40 |
-| elapsed | 3991 ms |
-| run id | `bd06fd052eac4bb0a65735c5212542b1` |
-| started | 2026-08-14 16:50:44Z |
-
-### Iterations
-
-#### Iteration 1
-
-| | |
-|---|---|
-| finish reason | stop |
-| tokens | in 2406, out 21 |
-| elapsed | 1959 ms |
+| tokens | in 2437, out 21 |
+| elapsed | 2243 ms |
 | tool calls | 1 |
 | content hash | `1b933abddd3a` |
 
@@ -3856,7 +3832,7 @@ There is currently 1 film in the Horror category. Would you like more informatio
 |---|---|
 | finish reason | stop |
 | tokens | in 52, out 19 |
-| elapsed | 2031 ms |
+| elapsed | 1569 ms |
 | tool calls | 0 |
 | content hash | `9b3d6fee0fd4` |
 
@@ -3882,10 +3858,260 @@ There is 1 film in the Horror category. Would you like to know its title?
 | expected | `142` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v3 |
+| method | deterministic-substring-v4 |
 | navigation complete | no |
 | required tools | search_category, get_category_film_ids or count_category_films |
 | never reached | **get_category_film_ids or count_category_films** |
 | fabricated arguments | 0 (invented id 0, invented search term 0) |
 | note | `Expected 142; answer contained 1.` |
+
+---
+
+## truncation-category-count (repeat 2)
+
+> How many films are in the Horror category?
+
+### Stats
+
+| | |
+|---|---|
+| outcome | Answered |
+| model | Ollama/mistral-nemo:12b |
+| surface | standard+desc (25 tools) |
+| expected hops | 2 |
+| iterations | 2/20 |
+| tool calls | 1 |
+| tokens | in 2489, out 40 |
+| elapsed | 3462 ms |
+| run id | `f804a8a6046d40e698809de13bd66909` |
+| started | 2026-08-15 16:17:22Z |
+
+### Iterations
+
+#### Iteration 1
+
+| | |
+|---|---|
+| finish reason | stop |
+| tokens | in 2437, out 21 |
+| elapsed | 1924 ms |
+| tool calls | 1 |
+| content hash | `1b933abddd3a` |
+
+##### Tool calls
+
+- `search_category`
+
+  | | |
+  |---|---|
+  | rows returned | 1 |
+  | elapsed | 0 ms |
+  | call id | `call_1` |
+  | arguments | `{"name_contains":"horror"}` |
+  | result | `category_id \| name ⏎ 11 \| Horror ⏎ 1 rows` |
+
+#### Iteration 2
+
+| | |
+|---|---|
+| finish reason | stop |
+| tokens | in 52, out 19 |
+| elapsed | 1537 ms |
+| tool calls | 0 |
+| content hash | `9b3d6fee0fd4` |
+
+**Said:**
+
+```
+There is 1 film in the Horror category. Would you like to know its title?
+```
+
+_No tool calls this iteration._
+
+### Grading
+
+**Answer given:**
+
+```
+There is 1 film in the Horror category. Would you like to know its title?
+```
+
+| | |
+|---|---|
+| result | **FAIL** |
+| expected | `142` |
+| expected behaviour | answer |
+| declined | no |
+| method | deterministic-substring-v4 |
+| navigation complete | no |
+| required tools | search_category, get_category_film_ids or count_category_films |
+| never reached | **get_category_film_ids or count_category_films** |
+| fabricated arguments | 0 (invented id 0, invented search term 0) |
+| note | `Expected 142; answer contained 1.` |
+
+---
+
+## hop5-customer-country (repeat 1)
+
+> Which country does the customer Bobby Boudreau live in?
+
+### Stats
+
+| | |
+|---|---|
+| outcome | Answered |
+| model | Ollama/mistral-nemo:12b |
+| surface | standard+desc (25 tools) |
+| expected hops | 5 |
+| iterations | 2/20 |
+| tool calls | 1 |
+| tokens | in 2510, out 37 |
+| elapsed | 3792 ms |
+| run id | `83016edc35944fce881ed7b42e1b0ced` |
+| started | 2026-08-15 16:17:25Z |
+
+### Iterations
+
+#### Iteration 1
+
+| | |
+|---|---|
+| finish reason | stop |
+| tokens | in 2440, out 24 |
+| elapsed | 2564 ms |
+| tool calls | 1 |
+| content hash | `c362a17c6874` |
+
+##### Tool calls
+
+- `search_customer`
+
+  | | |
+  |---|---|
+  | rows returned | 1 |
+  | elapsed | 1 ms |
+  | call id | `call_1` |
+  | arguments | `{"text_contains":"Bobby Boudreau"}` |
+  | result | `customer_id \| first_name \| last_name ⏎ 381 \| BOBBY \| BOUDREAU ⏎ 1 rows` |
+
+#### Iteration 2
+
+| | |
+|---|---|
+| finish reason | stop |
+| tokens | in 70, out 13 |
+| elapsed | 1226 ms |
+| tool calls | 0 |
+| content hash | `78d19b993e8b` |
+
+**Said:**
+
+```
+The customer Bobby Boudreau lives in the United States.
+```
+
+_No tool calls this iteration._
+
+### Grading
+
+**Answer given:**
+
+```
+The customer Bobby Boudreau lives in the United States.
+```
+
+| | |
+|---|---|
+| result | **FAIL** |
+| expected | `Anguilla` |
+| expected behaviour | answer |
+| declined | no |
+| method | deterministic-substring-v4 |
+| navigation complete | no |
+| required tools | search_customer, get_customer, get_address, get_city, get_country |
+| never reached | **get_customer, get_address, get_city, get_country** |
+| fabricated arguments | 0 (invented id 0, invented search term 0) |
+
+---
+
+## hop5-customer-country (repeat 2)
+
+> Which country does the customer Bobby Boudreau live in?
+
+### Stats
+
+| | |
+|---|---|
+| outcome | Answered |
+| model | Ollama/mistral-nemo:12b |
+| surface | standard+desc (25 tools) |
+| expected hops | 5 |
+| iterations | 2/20 |
+| tool calls | 1 |
+| tokens | in 2510, out 37 |
+| elapsed | 3246 ms |
+| run id | `e9ffb8e00bf942a69a8aa86c7f4749f3` |
+| started | 2026-08-15 16:17:29Z |
+
+### Iterations
+
+#### Iteration 1
+
+| | |
+|---|---|
+| finish reason | stop |
+| tokens | in 2440, out 24 |
+| elapsed | 2153 ms |
+| tool calls | 1 |
+| content hash | `c362a17c6874` |
+
+##### Tool calls
+
+- `search_customer`
+
+  | | |
+  |---|---|
+  | rows returned | 1 |
+  | elapsed | 1 ms |
+  | call id | `call_1` |
+  | arguments | `{"text_contains":"Bobby Boudreau"}` |
+  | result | `customer_id \| first_name \| last_name ⏎ 381 \| BOBBY \| BOUDREAU ⏎ 1 rows` |
+
+#### Iteration 2
+
+| | |
+|---|---|
+| finish reason | stop |
+| tokens | in 70, out 13 |
+| elapsed | 1091 ms |
+| tool calls | 0 |
+| content hash | `78d19b993e8b` |
+
+**Said:**
+
+```
+The customer Bobby Boudreau lives in the United States.
+```
+
+_No tool calls this iteration._
+
+### Grading
+
+**Answer given:**
+
+```
+The customer Bobby Boudreau lives in the United States.
+```
+
+| | |
+|---|---|
+| result | **FAIL** |
+| expected | `Anguilla` |
+| expected behaviour | answer |
+| declined | no |
+| method | deterministic-substring-v4 |
+| navigation complete | no |
+| required tools | search_customer, get_customer, get_address, get_city, get_country |
+| never reached | **get_customer, get_address, get_city, get_country** |
+| fabricated arguments | 0 (invented id 0, invented search term 0) |
 

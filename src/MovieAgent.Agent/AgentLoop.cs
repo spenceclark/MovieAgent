@@ -69,6 +69,13 @@ public sealed class AgentLoop(
         var exchangesSeen = 0;
         var callSequence = 0;
 
+        // The work budget. Iterations bound runaway loops; this bounds work, so that a model
+        // batching several calls into one turn gets the same allowance as one calling serially.
+        // Before this existed the iteration cap was the budget, which handed an unbounded
+        // allowance to any model whose chat template supports parallel tool calls.
+        var callsSpent = 0;
+        var budgetHit = false;
+
         try
         {
             // Agent has a maximum number of iterations it can make to answer the question.
@@ -145,8 +152,29 @@ public sealed class AgentLoop(
 
                     ToolInvocationResult result;
                     var blocked = false;
+                    var overBudget = false;
 
-                    if (isRepeat && options.Value.BlockRepeatedToolCalls)
+                    // The budget is counted here, after the model has committed to the call, so a
+                    // batched turn spends the same as the same calls made one at a time. Repeats
+                    // count too: the model was told not to repeat them, and a budget on distinct
+                    // calls would make looping free.
+                    if (callsSpent >= options.Value.MaxToolCalls)
+                    {
+                        blocked = true;
+                        overBudget = true;
+                        var first = !budgetHit;
+                        budgetHit = true;
+                        result = new ToolInvocationResult(
+                            call.Name,
+                            first
+                                ? ToolOutputFormat.ToolBudgetExhaustedError(options.Value.MaxToolCalls)
+                                : ToolOutputFormat.ToolBudgetExhaustedRepeat,
+                            IsError: true,
+                            IsTerminal: false,
+                            RowsReturned: 0,
+                            ElapsedMilliseconds: 0);
+                    }
+                    else if (isRepeat && options.Value.BlockRepeatedToolCalls)
                     {
                         blocked = true;
                         result = new ToolInvocationResult(
@@ -167,14 +195,24 @@ public sealed class AgentLoop(
                         previousCalls[signature] = DescribeOutcome(result);
                     }
 
-                    logger.LogInformation(
-                        "[{Iteration}] {Tool}({Args}) -> {Rows} row(s) in {Elapsed}ms{Status}",
-                        iteration,
-                        call.Name,
-                        argumentsRaw,
-                        result.RowsReturned,
-                        result.ElapsedMilliseconds,
-                        blocked ? " [repeat blocked]" : result.IsError ? " [error]" : string.Empty);
+                    if (!overBudget)
+                    {
+                        callsSpent++;
+                    }
+
+                    // Refusals past the budget are not logged individually — one turn produced 111
+                    // of them, which buries everything else in the run.
+                    if (!overBudget)
+                    {
+                        logger.LogInformation(
+                            "[{Iteration}] {Tool}({Args}) -> {Rows} row(s) in {Elapsed}ms{Status}",
+                            iteration,
+                            call.Name,
+                            argumentsRaw,
+                            result.RowsReturned,
+                            result.ElapsedMilliseconds,
+                            blocked ? " [repeat blocked]" : result.IsError ? " [error]" : string.Empty);
+                    }
 
                     callRecords.Add(new ToolCallRecord
                     {
@@ -187,6 +225,7 @@ public sealed class AgentLoop(
                         IsError = result.IsError,
                         WasRepeat = isRepeat,
                         Blocked = blocked,
+                        OverBudget = overBudget,
                         ElapsedMilliseconds = result.ElapsedMilliseconds,
                     });
 
@@ -195,6 +234,14 @@ public sealed class AgentLoop(
 
                 iterations.Add(BuildIteration(iteration, response, turnStopwatch, callRecords, exchange, reasoningText));
                 messages.Add(new ChatMessage(ChatRole.Tool, resultContents));
+            }
+
+            if (budgetHit)
+            {
+                logger.LogWarning(
+                    "Question {QuestionId} exhausted the tool-call budget of {Budget}.",
+                    request.QuestionId,
+                    options.Value.MaxToolCalls);
             }
 
             if (outcome == RunOutcome.IterationCapReached)
@@ -228,6 +275,7 @@ public sealed class AgentLoop(
             ExpectedHops = request.ExpectedHops,
             ToolSurface = surface.Name,
             ToolNames = surface.ToolNames,
+            ToolSchemaSha256 = surface.SchemaSha256(),
             Provider = provider,
             Model = model,
             Seed = options.Value.Seed,
@@ -243,11 +291,15 @@ public sealed class AgentLoop(
             SystemPromptSha256 = Agent.SystemPrompt.Sha256(request.SystemPrompt),
             OutputFormatVersion = ToolOutputFormat.Version,
             MaxIterations = options.Value.MaxIterations,
+            MaxToolCalls = options.Value.MaxToolCalls,
             Outcome = RunOutcomeClassifier.Effective(outcome, finalAnswer),
             CapHit = outcome == RunOutcome.IterationCapReached,
+            ToolBudgetHit = budgetHit,
             FinalAnswer = finalAnswer,
             IterationCount = iterations.Count,
-            ToolCallCount = iterations.Sum(i => i.ToolCalls.Count),
+            // Refusals past the budget are excluded: they never ran, and counting them would
+            // make this a measure of how hard a model spams rather than how much work it did.
+            ToolCallCount = iterations.Sum(i => i.ToolCalls.Count(c => !c.OverBudget)),
             TotalInputTokens = SumTokens(iterations, i => i.InputTokens),
             TotalOutputTokens = SumTokens(iterations, i => i.OutputTokens),
             ElapsedMilliseconds = runStopwatch.ElapsedMilliseconds,

@@ -74,9 +74,15 @@ public static partial class SqlShortcutGuard
         // would make this surface a different experiment again — the control is "generic SQL
         // over the same base tables", not "plus the convenience views" — and the schema is
         // already available through get_schema, so introspection buys nothing here.
+        // Object names are checked against a form that keeps quoted identifiers, because
+        // "film_list" and film_list name the same relation to PostgreSQL. The keyword checks above
+        // deliberately use the blanked form instead: a column legitimately named "delete" is not
+        // a DELETE statement.
+        var objects = UnquoteIdentifiers(StripLiteralsAndComments(sql, blankQuotedIdentifiers: false));
+
         foreach (var banned in ToolCatalogueValidator.BannedObjects)
         {
-            if (Regex.IsMatch(stripped, $@"\b{Regex.Escape(banned)}\b", RegexOptions.IgnoreCase))
+            if (Regex.IsMatch(objects, $@"\b{Regex.Escape(banned)}\b", RegexOptions.IgnoreCase))
             {
                 return new Verdict(
                     false,
@@ -92,13 +98,28 @@ public static partial class SqlShortcutGuard
     /// Blanks out string literals and comments before keyword matching, so a film title
     /// containing the word "update" is not mistaken for an UPDATE statement.
     /// </summary>
-    private static string StripLiteralsAndComments(string sql)
+    /// <param name="blankQuotedIdentifiers">
+    /// True for keyword matching, where a double-quoted identifier is data. False for
+    /// banned-object matching, where it is the object name and must survive.
+    /// </param>
+    private static string StripLiteralsAndComments(string sql, bool blankQuotedIdentifiers = true)
     {
         var noBlockComments = BlockCommentPattern().Replace(sql, " ");
         var noLineComments = LineCommentPattern().Replace(noBlockComments, " ");
         var noStrings = SingleQuotedPattern().Replace(noLineComments, " '' ");
-        return DoubleQuotedPattern().Replace(noStrings, " \"\" ");
+
+        return blankQuotedIdentifiers
+            ? DoubleQuotedPattern().Replace(noStrings, " \"\" ")
+            : noStrings;
     }
+
+    /// <summary>
+    /// Replaces "quoted identifiers" with their unescaped contents, so the banned-object scan
+    /// sees the relation PostgreSQL will actually resolve. Doubled quotes inside are a literal
+    /// quote character and collapse to one.
+    /// </summary>
+    private static string UnquoteIdentifiers(string sql) =>
+        DoubleQuotedPattern().Replace(sql, m => " " + m.Value[1..^1].Replace("\"\"", "\"") + " ");
 
     [GeneratedRegex(@"^\s*(select|with)\b", RegexOptions.IgnoreCase)]
     private static partial Regex StartsReadOnlyPattern();

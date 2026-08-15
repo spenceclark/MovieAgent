@@ -3,6 +3,7 @@ using MovieAgent.Agent;
 using MovieAgent.Hosting;
 using MovieAgent.Agent.Abstractions;
 using MovieAgent.Agent.Configuration;
+using MovieAgent.Agent.Tools;
 using MovieAgent.Evaluation;
 
 namespace MovieAgent.EntryPoints;
@@ -85,7 +86,15 @@ public sealed class DeterminismEntryPoint : IAppEntryPoint
         for (var i = 1; i <= n; i++)
         {
             var run = await _agentLoop.RunAsync(
-                new AgentRunRequest { QuestionId = question.Id, Question = question.Question, Repeat = i },
+                new AgentRunRequest
+                {
+                    QuestionId = question.Id,
+                    Question = question.Question,
+                    Repeat = i,
+                    SystemPrompt = SystemPrompt.ForSurface(
+                        ToolSurfaces.Get(_agentOptions.ToolSurface),
+                        _agentOptions.OmitDeclineCredit),
+                },
                 _llmOptions.Provider.ToString(),
                 model,
                 cancellationToken);

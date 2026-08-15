@@ -120,6 +120,10 @@ one tool but cannot compose a chain across turns**. The first should fail here t
 
 Design notes, all deliberate:
 
+- The control has its own system prompt. The standard prompt says each tool reads one table and
+  cannot join, which is false on this surface; `SystemPrompt.ForSurface` selects a SQL-specific
+  prompt that describes PostgreSQL, permits joins and tells the model to inspect the schema first.
+  The prompt and its hash are recorded on every run.
 - The two tools live in `SqlShortcutCatalogue`, **not** `ToolCatalogue`, so `ToolCatalogueValidator`
   keeps proving the main catalogue is join-free and one-table-per-tool. The validator now also
   rejects any non-descriptor tool that turns up in the main catalogue, so the split cannot rot.

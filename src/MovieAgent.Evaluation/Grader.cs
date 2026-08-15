@@ -26,10 +26,10 @@ namespace MovieAgent.Evaluation;
 public static partial class Grader
 {
     /// <summary>
-    /// v3: fabricated arguments split into id vs search term, and an answer truncated by the
-    /// token cap can no longer be graded as a refusal.
+    /// v4: an explicitly labelled decline must complete its reachable evidence path before the
+    /// refusal can score. Surface-relative declines caused by an unavailable tool remain exempt.
     /// </summary>
-    public const string Method = "deterministic-substring-v3";
+    public const string Method = "deterministic-substring-v4";
 
     private const string ResultNoun =
         @"(?:match(?:es|ing)?|result(?:s)?|record(?:s)?|film(?:s)?|actor(?:s)?|customer(?:s)?|row(?:s)?|entr(?:y|ies)|data|information)";
@@ -148,7 +148,22 @@ public static partial class Grader
 
         if (shouldDecline)
         {
-            var declined = !answerTruncated && LooksLikeRefusal(answer);
+            var looksLikeRefusal = !answerTruncated && LooksLikeRefusal(answer);
+
+            // Explicit decline questions have an evidence path: for example, the hard-director
+            // case must find the film and inspect its record before concluding that the schema
+            // cannot supply a director. A refusal reached by searching for an unrelated entity
+            // is not correct merely because its final wording looks like a refusal.
+            //
+            // Do not apply this to a surface-relative decline whose path contains an unavailable
+            // tool: completing that path is impossible by definition. Navigation is also not
+            // meaningful on the generic-SQL control surface.
+            var requiresEvidence = !genericSql
+                && string.Equals(question.ExpectedBehaviour, "decline", StringComparison.OrdinalIgnoreCase)
+                && question.UnreachableStepsOn(surfaceToolNames).Count == 0;
+            var evidenceComplete = !requiresEvidence || missing.Length == 0;
+            var declined = looksLikeRefusal && evidenceComplete;
+
             return WithNavigation(new GradeRecord
             {
                 ExpectedAnswer = question.ExpectedAnswer,
@@ -156,7 +171,11 @@ public static partial class Grader
                 Correct = declined,
                 Declined = declined,
                 Method = Method,
-                Note = declined ? null : "Expected a refusal; the model answered.",
+                Note = declined
+                    ? null
+                    : looksLikeRefusal && !evidenceComplete
+                        ? "Refused before completing the evidence path required for this decline."
+                        : "Expected a refusal; the model answered.",
             });
         }
 
@@ -222,8 +241,26 @@ public static partial class Grader
             return (false, "Question has no expected_answer but is graded as answerable.");
         }
 
-        return (Normalise(answer).Contains(Normalise(expected), StringComparison.Ordinal), null);
+        return (ContainsWhole(Normalise(answer), Normalise(expected)), null);
     }
+
+    /// <summary>
+    /// Substring containment that will not match inside a longer word or number. Plain
+    /// <c>Contains</c> let "30" match inside "130 films", passing a question whose answer was 30.
+    /// </summary>
+    /// <remarks>
+    /// The flanking test is "not a word character" rather than "whitespace", because
+    /// <see cref="Normalise"/> keeps <c>.</c>, <c>@</c> and <c>-</c> so that emails and decimals
+    /// survive. A trailing full stop must still count as a boundary — "lives in thailand." is a
+    /// correct answer — while a leading digit must not.
+    /// </remarks>
+    private static bool ContainsWhole(string normalisedAnswer, string normalisedExpected) =>
+        normalisedExpected.Length > 0
+        && Regex.IsMatch(
+            normalisedAnswer,
+            $@"(?<!\w){Regex.Escape(normalisedExpected)}(?!\w)",
+            RegexOptions.None,
+            TimeSpan.FromSeconds(1));
 
     private static (bool Correct, string? Note) MatchSet(string? expected, string answer)
     {
@@ -234,7 +271,7 @@ public static partial class Grader
 
         var parts = expected.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         var normalised = Normalise(answer);
-        var missing = parts.Where(p => !normalised.Contains(Normalise(p), StringComparison.Ordinal)).ToArray();
+        var missing = parts.Where(p => !ContainsWhole(normalised, Normalise(p))).ToArray();
 
         return missing.Length == 0
             ? (true, null)

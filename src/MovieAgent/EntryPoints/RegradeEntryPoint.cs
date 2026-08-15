@@ -30,12 +30,20 @@ public sealed class RegradeEntryPoint : IAppEntryPoint
             return 1;
         }
 
-        // Never overwrite in place. The original file is the raw record of what happened.
+        // Never overwrite in place. The original file is the raw record of what happened, and a
+        // regrade round-trips it through deserialise/reserialise, so writing back would also drop
+        // any property this build does not know about.
         var output = args.Length > 1
             ? args[1]
             : Path.Combine(
                 Path.GetDirectoryName(Path.GetFullPath(input))!,
                 Path.GetFileNameWithoutExtension(input) + ".regraded.jsonl");
+
+        if (ReportEntryPoint.SamePath(input, output))
+        {
+            Console.Error.WriteLine($"Refusing to regrade over the raw record: {input}");
+            return 1;
+        }
 
         var result = await _regrader.RegradeAsync(input, output, EvalSetLoader.LoadMany(_evalSetOptions.FileNames), cancellationToken);
 

@@ -6,6 +6,8 @@ list all originate there and are not repeated. **Two of those concerns turned ou
 affecting the numbers.** Both are now fixed, 22 of the 27 models re-run, and this is the corrected
 result.
 
+> **Superseded by [RESULTS-ANALYSIS-3.md](RESULTS-ANALYSIS-3.md)** (sweep v3), which re-runs every model under a tool-call budget after finding that models batching several calls into one turn had an unbounded work allowance here. Kept for reference; the figures below stand as what was measured at the time.
+
 Workbook: tab **`sweep v2 (fixed)`**. Sheet1 is preserved unchanged as the v1 record.
 
 ---
@@ -25,6 +27,7 @@ tool would never list every row. Models did what they were told. qwen3.5:9b spen
 of `unreachable-total-film-count` on eight successive substring guesses. The rejection is not
 terminal in general — a longer term is valid, and near-miss recovery depends on it — so it now uses a
 third category between retryable and terminal:
+
 
 > *"…must be at least 2 characters, and no value of any length will make this tool list every row —
 > it only finds rows matching the text you give it. You may retry with a longer, more specific search

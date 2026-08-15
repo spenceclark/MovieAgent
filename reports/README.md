@@ -8,65 +8,67 @@ dotnet run --project src/MovieAgent -- report runs/<file>.jsonl reports/<name>.m
 
 The JSONL under `runs/` is the dataset and is gitignored; these are the readable rendering of it, committed so they can be linked to.
 
-> **Three vintages here, and they are not interchangeable.** The main table is **sweep v2** — re-run under output-format contract **1.2** after two harness fixes (see [RESULTS-ANALYSIS-2.md](../RESULTS-ANALYSIS-2.md)). The other two tables are at contract **1.1** and predate those fixes. 1.1 and 1.2 are not comparable on the refusal axis.
+> **Three vintages here, and they are not interchangeable.** The main table is **sweep v3** at output-format contract **1.3** (see [RESULTS-ANALYSIS-3.md](../RESULTS-ANALYSIS-3.md)). v3 also changed the system prompt, so it is not comparable with v2 on *any* axis, not just refusal — the prompt hash is recorded on every run. The other two tables are at contract **1.1** and predate both re-runs.
 
-`Strict` is correct **and** having reached every required tool (declines exempt). **Hosted models run at n=3 (63 runs), local at n=2 (42)** — compare `Strict %`, not raw counts.
+**v3 configuration:** `standard+desc`, 23 questions, n=2 for every model — local and hosted alike, so raw counts are comparable across the two groups for the first time. Tool-call budget **15**, iteration guard **20**, and the prompt permits calling several independent tools in one turn.
+
+Final grades use `deterministic-substring-v4`. `Strict` is correct **and** having reached every
+required tool. Explicitly labelled decline questions must also complete their reachable evidence
+path; surface-relative declines caused by an unavailable tool remain exempt. It is the column to
+read: `Correct` is substring-based and can pass an answer that never navigated.
+
+`Budget` counts runs that asked for a tool call after spending all 15.
 
 
-## Sweep v2 — `standard+desc`, contract 1.2
+## Sweep v3 — `standard+desc`, contract 1.3
 
-| Model | Report | Strict | Strict % | Correct | Runs | Tool calls |
-|---|---|---|---|---|---|---|
-| `gpt-5.4` | [gpt-5-4--standard-desc.md](gpt-5-4--standard-desc.md) | 63/63 | **100.0** | 63 | 63 | 213 |
-| `qwen3.5:9b` | [qwen3-5-9b--standard-desc.md](qwen3-5-9b--standard-desc.md) | 40/42 | **95.2** | 40 | 42 | 170 |
-| `gpt-5.6-sol` | [gpt-5-6-sol--standard-desc.md](gpt-5-6-sol--standard-desc.md) | 56/63 | **88.9** | 56 | 63 | 213 |
-| `gpt-5.5` | [gpt-5-5--standard-desc.md](gpt-5-5--standard-desc.md) | 55/63 | **87.3** | 55 | 63 | 204 |
-| `gpt-5.6-luna` | [gpt-5-6-luna--standard-desc.md](gpt-5-6-luna--standard-desc.md) | 54/63 | **85.7** | 54 | 63 | 201 |
-| `gpt-5.6-terra` | [gpt-5-6-terra--standard-desc.md](gpt-5-6-terra--standard-desc.md) | 52/63 | **82.5** | 52 | 63 | 180 |
-| `qwen3:4b-instruct` | [qwen3-4b-instruct--standard-desc.md](qwen3-4b-instruct--standard-desc.md) | 32/42 | **76.2** | 32 | 42 | 108 |
-| `qwen3.5:4b` | [qwen3-5-4b--standard-desc.md](qwen3-5-4b--standard-desc.md) | 30/42 | **71.4** | 30 | 42 | 178 |
-| `qwen3.5:2b-q4_K_M` | [qwen3-5-2b-q4_K_M--standard-desc.md](qwen3-5-2b-q4_K_M--standard-desc.md) | 30/42 | **71.4** | 30 | 42 | 236 |
-| `gpt-4o` | [gpt-4o--standard-desc.md](gpt-4o--standard-desc.md) | 45/63 | **71.4** | 45 | 63 | 169 |
-| `gemma4:e2b` | [gemma4-e2b--standard-desc.md](gemma4-e2b--standard-desc.md) | 28/42 | **66.7** | 28 | 42 | 83 |
-| `gpt-4o-mini` | [gpt-4o-mini--standard-desc.md](gpt-4o-mini--standard-desc.md) | 40/63 | **63.5** | 40 | 63 | 235 |
-| `gemma4:e4b` | [gemma4-e4b--standard-desc.md](gemma4-e4b--standard-desc.md) | 26/42 | **61.9** | 26 | 42 | 102 |
-| `ministral-3` | [ministral-3--standard-desc.md](ministral-3--standard-desc.md) | 22/42 | **52.4** | 24 | 42 | 104 |
-| `qwen2.5:7b` | [qwen2-5-7b--standard-desc.md](qwen2-5-7b--standard-desc.md) | 20/42 | **47.6** | 20 | 42 | 114 |
-| `qwen3.5:2b` | [qwen3-5-2b--standard-desc.md](qwen3-5-2b--standard-desc.md) | 20/42 | **47.6** | 20 | 42 | 226 |
-| `qwen2.5:3b` | [qwen2-5-3b--standard-desc.md](qwen2-5-3b--standard-desc.md) | 11/42 | **26.2** | 13 | 42 | 236 |
-| `llama3.2` | [llama3-2--standard-desc.md](llama3-2--standard-desc.md) | 6/42 | **14.3** | 6 | 42 | 42 |
-| `mistral-nemo:12b` | [mistral-nemo-12b--standard-desc.md](mistral-nemo-12b--standard-desc.md) | 6/42 | **14.3** | 6 | 42 | 44 |
-| `hermes3:8b` | [hermes3-8b--standard-desc.md](hermes3-8b--standard-desc.md) | 6/42 | **14.3** | 11 | 42 | 67 |
-| `llama3.1` | [llama3-1--standard-desc.md](llama3-1--standard-desc.md) | 4/42 | **9.5** | 8 | 42 | 173 |
-| `qwen2.5:1.5b` | [qwen2-5-1-5b--standard-desc.md](qwen2-5-1-5b--standard-desc.md) | 0/42 | **0.0** | 2 | 42 | 15 |
+| Model | Report | Strict | Strict % | Correct | Declines | Over-ref | Tool calls | Budget |
+|---|---|---|---|---|---|---|---|---|
+| `gpt-5.4` | [gpt-5-4--standard-desc.md](gpt-5-4--standard-desc.md) | 43/44 | **97.7** | 43 | 8/8 | 0 | 149 | 0 |
+| `qwen3.5:9b` | [qwen3-5-9b--standard-desc.md](qwen3-5-9b--standard-desc.md) | 42/44 | **95.5** | 44 | 8/8 | 0 | 196 | 2 |
+| `gpt-5.5` | [gpt-5-5--standard-desc.md](gpt-5-5--standard-desc.md) | 38/44 | **86.4** | 38 | 6/8 | 4 | 146 | 0 |
+| `qwen3.5:4b` | [qwen3-5-4b--standard-desc.md](qwen3-5-4b--standard-desc.md) | 38/44 | **86.4** | 38 | 8/8 | 2 | 236 | 2 |
+| `gpt-5.6-luna` | [gpt-5-6-luna--standard-desc.md](gpt-5-6-luna--standard-desc.md) | 37/44 | **84.1** | 37 | 6/8 | 4 | 142 | 0 |
+| `gpt-5.6-terra` | [gpt-5-6-terra--standard-desc.md](gpt-5-6-terra--standard-desc.md) | 37/44 | **84.1** | 37 | 7/8 | 6 | 134 | 0 |
+| `gpt-5.6-sol` | [gpt-5-6-sol--standard-desc.md](gpt-5-6-sol--standard-desc.md) | 36/44 | **81.8** | 36 | 4/8 | 4 | 147 | 0 |
+| `qwen3.5:2b-q4_K_M` | [qwen3-5-2b-q4_K_M--standard-desc.md](qwen3-5-2b-q4_K_M--standard-desc.md) | 34/44 | **77.3** | 34 | 6/8 | 2 | 354 | 12 |
+| `qwen3:4b-instruct` | [qwen3-4b-instruct--standard-desc.md](qwen3-4b-instruct--standard-desc.md) | 33/44 | **75.0** | 33 | 6/8 | 6 | 126 | 0 |
+| `gpt-4o-mini` | [gpt-4o-mini--standard-desc.md](gpt-4o-mini--standard-desc.md) | 32/44 | **72.7** | 32 | 5/8 | 7 | 149 | 0 |
+| `gpt-4o` | [gpt-4o--standard-desc.md](gpt-4o--standard-desc.md) | 31/44 | **70.5** | 31 | 5/8 | 8 | 125 | 0 |
+| `gemma4:e4b` | [gemma4-e4b--standard-desc.md](gemma4-e4b--standard-desc.md) | 28/44 | **63.6** | 28 | 4/8 | 8 | 104 | 0 |
+| `gemma4:e2b` | [gemma4-e2b--standard-desc.md](gemma4-e2b--standard-desc.md) | 25/44 | **56.8** | 25 | 3/8 | 8 | 100 | 0 |
+| `qwen3.5:2b` | [qwen3-5-2b--standard-desc.md](qwen3-5-2b--standard-desc.md) | 22/42 | **52.4** | 22 | 2/6 | 6 | 242 | 6 |
+| `qwen2.5:7b` | [qwen2-5-7b--standard-desc.md](qwen2-5-7b--standard-desc.md) | 23/44 | **52.3** | 25 | 6/8 | 12 | 121 | 0 |
+| `ministral-3` | [ministral-3--standard-desc.md](ministral-3--standard-desc.md) | 20/43 | **46.5** | 20 | 3/8 | 10 | 107 | 0 |
+| `qwen2.5:3b` | [qwen2-5-3b--standard-desc.md](qwen2-5-3b--standard-desc.md) | 11/44 | **25.0** | 11 | 5/8 | 9 | 165 | 1 |
+| `mistral-nemo:12b` | [mistral-nemo-12b--standard-desc.md](mistral-nemo-12b--standard-desc.md) | 6/44 | **13.6** | 6 | 6/8 | 11 | 51 | 0 |
+| `hermes3:8b` | [hermes3-8b--standard-desc.md](hermes3-8b--standard-desc.md) | 4/44 | **9.1** | 9 | 2/8 | 5 | 85 | 2 |
+| `llama3.1` | [llama3-1--standard-desc.md](llama3-1--standard-desc.md) | 3/44 | **6.8** | 6 | 0/8 | 11 | 125 | 1 |
+| `llama3.2` | [llama3-2--standard-desc.md](llama3-2--standard-desc.md) | 2/44 | **4.5** | 2 | 2/8 | 4 | 44 | 0 |
+| `qwen2.5:1.5b` | [qwen2-5-1-5b--standard-desc.md](qwen2-5-1-5b--standard-desc.md) | 0/44 | **0.0** | 2 | 0/8 | 2 | 15 | 0 |
 
 ## Not re-run — zero tool calls, contract 1.1
 
-Every one of these made **literally zero** tool calls across every recorded run, so neither fix could reach them. Their reports are the original v1 runs and they remain hard fails.
+These five made **literally zero tool calls** across every recorded run. Neither a tool-call budget nor permission to batch can move a model that never calls a tool, so they were left at their v1 numbers rather than burning GPU time to reproduce a zero. See [RESULTS-ANALYSIS.md](../RESULTS-ANALYSIS.md) for what each was doing instead.
 
-| Model | Report | Strict | Runs | Tool calls |
-|---|---|---|---|---|
-| `mistral` | [mistral--standard-desc.md](mistral--standard-desc.md) | 2/42 | 42 | **0** |
-| `granite3.3:8b` | [granite3-3-8b--standard-desc.md](granite3-3-8b--standard-desc.md) | 3/42 | 42 | **0** |
-| `command-r7b` | [command-r7b--standard-desc.md](command-r7b--standard-desc.md) | 8/42 | 42 | **0** |
-| `deepseek-r1:8b` | [deepseek-r1-8b--standard-desc.md](deepseek-r1-8b--standard-desc.md) | 1/42 | 42 | **0** |
-| `phi4-mini` | [phi4-mini--standard-desc.md](phi4-mini--standard-desc.md) | 1/21 | 21 | **0** |
+| Model | Report |
+|---|---|
+| `deepseek-r1:8b` | [deepseek-r1-8b--standard-desc.md](deepseek-r1-8b--standard-desc.md) |
+| `phi4-mini` | [phi4-mini--standard-desc.md](phi4-mini--standard-desc.md) |
+| `command-r7b` | [command-r7b--standard-desc.md](command-r7b--standard-desc.md) |
+| `granite3.3:8b` | [granite3-3-8b--standard-desc.md](granite3-3-8b--standard-desc.md) |
+| `mistral` | [mistral--standard-desc.md](mistral--standard-desc.md) |
 
-## Control surface — `sql-shortcut`, contract 1.1
 
-Two tools (`get_schema`, `execute_sql`) and the ten chain questions only. **Not a capability ranking** — text-to-SQL has far more training data behind it than agentic tool composition, so a higher score here shows the task changed. Read the delta against the same model's chain score.
+## The `sql-shortcut` control — contract 1.3
 
-These predate both fixes and have not been re-run. The finding they support — that the shortcut rescued nobody — does not depend on tool-output formatting: the two models that failed made zero tool calls or wrote SQL blind without reading the schema.
+The main sweep deliberately refuses a generic SQL surface, so that a chain has to be walked rather than joined. This control gives six models `get_schema` and `execute_sql` on the chain questions only, to test whether the no-shortcuts constraint is what causes the failures. These reports supersede the original control: they use a surface-specific prompt that describes PostgreSQL, permits joins and explicitly tells the model to inspect the schema before writing SQL (prompt hash `c67d8a8a366b`). It is not a leaderboard; compare each row only with the same model on the same ten questions in the final main sweep.
 
-| Model | Report | Correct | Runs | Tool calls |
-|---|---|---|---|---|
-| `granite3.3:8b` | [granite3-3-8b--sql-shortcut.md](granite3-3-8b--sql-shortcut.md) | 0 | 20 | 0 |
-| `command-r7b` | [command-r7b--sql-shortcut.md](command-r7b--sql-shortcut.md) | 0 | 20 | 0 |
-| `llama3.2` | [llama3-2--sql-shortcut.md](llama3-2--sql-shortcut.md) | 0 | 20 | 20 |
-| `mistral-nemo:12b` | [mistral-nemo-12b--sql-shortcut.md](mistral-nemo-12b--sql-shortcut.md) | 2 | 20 | 20 |
-| `gemma4:e4b` | [gemma4-e4b--sql-shortcut.md](gemma4-e4b--sql-shortcut.md) | 18 | 20 | 68 |
-| `qwen3.5:4b` | [qwen3-5-4b--sql-shortcut.md](qwen3-5-4b--sql-shortcut.md) | 20 | 20 | 84 |
-
----
-
-33 reports, 4.3 MB total. Derived data — regenerate with the command above, or delete safely.
+| Model | Report |
+|---|---|
+| `qwen3.5:4b` | [qwen3-5-4b--sql-shortcut.md](qwen3-5-4b--sql-shortcut.md) |
+| `gemma4:e4b` | [gemma4-e4b--sql-shortcut.md](gemma4-e4b--sql-shortcut.md) |
+| `llama3.2` | [llama3-2--sql-shortcut.md](llama3-2--sql-shortcut.md) |
+| `mistral-nemo:12b` | [mistral-nemo-12b--sql-shortcut.md](mistral-nemo-12b--sql-shortcut.md) |
+| `command-r7b` | [command-r7b--sql-shortcut.md](command-r7b--sql-shortcut.md) |
+| `granite3.3:8b` | [granite3-3-8b--sql-shortcut.md](granite3-3-8b--sql-shortcut.md) |

@@ -81,6 +81,12 @@ public sealed class EvalRunner
                         Question = question.Question,
                         ExpectedHops = question.ExpectedHops,
                         Repeat = repeat,
+                        // The SQL control exposes the opposite abstraction to the main catalogue;
+                        // recording the right tool schemas under the wrong prompt would not be a
+                        // clean control. Select both from the same resolved surface.
+                        SystemPrompt = SystemPrompt.ForSurface(
+                            surface,
+                            _agentOptions.OmitDeclineCredit),
                     },
                     _llmOptions.Provider.ToString(),
                     model,
@@ -158,8 +164,19 @@ public sealed record EvalSummary(
         bool thinking,
         IReadOnlyList<(EvalQuestion Question, RunRecord Run)> graded)
     {
+        // Counted before the filter below removes them, or this can only ever report zero — which
+        // is exactly what it did on its first sweep, hiding two reproducible Ollama 500s behind
+        // "errors 0" while the denominator quietly dropped from 44 to 42.
+        var erroredCount = graded.Count(g => g.Run.Outcome == RunOutcome.Errored);
+
         // Unscored exhibits still run and are still recorded; they just never reach a denominator.
-        graded = [.. graded.Where(g => g.Run.Grade?.Scored != false)];
+        // Errored runs go with them: a transport failure or a bad model tag says nothing about the
+        // model's tool use, and counting it as an incorrect answer understates the model. Note this
+        // makes denominators vary between models when a run dies, so read rates, not raw counts.
+        graded =
+        [
+            .. graded.Where(g => g.Run.Grade?.Scored != false && g.Run.Outcome != RunOutcome.Errored),
+        ];
 
         var byHop = graded
             .Where(g => g.Run.Grade?.ExpectedBehaviour == "answer")
@@ -196,7 +213,9 @@ public sealed record EvalSummary(
             // The strict score: correct AND, where the question requires traversal, having
             // actually reached every required tool. Drops passes the model landed on by luck —
             // llama3.1 calling get_film(1) without searching, then being right because film 1
-            // happens to be English. A decline needs no traversal, so it is exempt.
+            // happens to be English. Declines are exempt here: Grader already enforces the
+            // reachable evidence path for explicitly labelled decline questions, while a
+            // surface-relative decline may exist precisely because its path is unreachable.
             //
             // Note `!= false`, not `== true`: NavigationComplete is null on a surface that has no
             // notion of navigation (sql-shortcut). Requiring `== true` would score every one of
@@ -206,7 +225,7 @@ public sealed record EvalSummary(
             graded.Count(g => g.Run.Grade?.Correct == true
                 && (g.Run.Grade.ExpectedBehaviour != "answer" || g.Run.Grade.NavigationComplete != false)),
             graded.Count(g => g.Run.CapHit),
-            graded.Count(g => g.Run.Outcome == RunOutcome.Errored),
+            erroredCount,
             graded.Count(g => g.Run.Outcome == RunOutcome.EmptyAnswer),
             graded.Count == 0 ? 0 : graded.Average(g => g.Run.ToolCallCount),
             callBearingIterations == 0 ? 0 : (double)totalCalls / callBearingIterations,

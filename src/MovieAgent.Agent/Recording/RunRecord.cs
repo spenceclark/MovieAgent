@@ -73,6 +73,19 @@ public sealed record ToolCallRecord
     /// <summary>True when the call was intercepted rather than executed against the database.</summary>
     [JsonPropertyName("blocked")] public bool Blocked { get; init; }
 
+    /// <summary>
+    /// The call arrived after the run's tool-call budget was already spent, so it was refused
+    /// without being charged.
+    /// </summary>
+    /// <remarks>
+    /// Excluded from <see cref="RunRecord.ToolCallCount"/> on purpose. A model can emit a great
+    /// many calls in one turn — 123 in the worst pilot run, until it hit its output token limit —
+    /// and counting refusals would make calls-per-run a measure of how hard a model spams rather
+    /// than how much work it did. They are still recorded here, because how many a model tried to
+    /// make after being told there were none left is worth knowing.
+    /// </remarks>
+    [JsonPropertyName("over_budget")] public bool OverBudget { get; init; }
+
     [JsonPropertyName("elapsed_ms")] public required long ElapsedMilliseconds { get; init; }
 }
 
@@ -175,6 +188,14 @@ public sealed record RunRecord
 
     [JsonPropertyName("tool_names")] public required IReadOnlyList<string> ToolNames { get; init; }
 
+    /// <summary>
+    /// Hash of the tool descriptions and parameter schemas as advertised on this run. Null on runs
+    /// recorded before it existed, where only the names are known and any regrade that depends on
+    /// the schema — argument provenance, schema enumeration — is describing the current catalogue
+    /// rather than the one the model saw.
+    /// </summary>
+    [JsonPropertyName("tool_schema_sha256")] public string? ToolSchemaSha256 { get; init; }
+
     [JsonPropertyName("provider")] public required string Provider { get; init; }
 
     [JsonPropertyName("model")] public required string Model { get; init; }
@@ -229,9 +250,24 @@ public sealed record RunRecord
 
     [JsonPropertyName("max_iterations")] public required int MaxIterations { get; init; }
 
+    /// <summary>
+    /// The tool-call budget this run was given. Null on runs recorded before the budget existed,
+    /// where <see cref="MaxIterations"/> was the effective cap and a model batching calls into one
+    /// turn had no cap at all — so this being null is a reason not to compare call counts with a
+    /// budgeted run, not a zero.
+    /// </summary>
+    [JsonPropertyName("max_tool_calls")] public int? MaxToolCalls { get; init; }
+
     [JsonPropertyName("outcome")] public required RunOutcome Outcome { get; init; }
 
     [JsonPropertyName("cap_hit")] public required bool CapHit { get; init; }
+
+    /// <summary>
+    /// The run asked for a tool call after its budget was spent and got an error back. Distinct
+    /// from <see cref="CapHit"/>: a run can exhaust the budget and still answer well, which is
+    /// the point of returning an error rather than terminating.
+    /// </summary>
+    [JsonPropertyName("tool_budget_hit")] public bool? ToolBudgetHit { get; init; }
 
     [JsonPropertyName("final_answer")] public string? FinalAnswer { get; init; }
 
