@@ -1,5 +1,7 @@
 # Can a small model be a good agent?
 
+> Posted to <https://spencerclark.dev/blog/can-a-small-model-be-good-agent/>
+
 ## Background
 
 My previous posts had looked at using local LLMs to generate content, but what about using them in an agentic capacity? Can a local model on a modest GPU succeed as an agent, and work through a multi-stage action?
