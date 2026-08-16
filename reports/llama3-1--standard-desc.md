@@ -1,4 +1,4 @@
-# Run report: runs-20260815-160815.regraded-v4.jsonl
+# Run report: runs-20260815-160815.regraded.jsonl
 
 | | |
 |---|---|
@@ -40,8 +40,8 @@
 - [hop4-inventory-store-city (repeat 2)](#hop4-inventory-store-city-repeat-2) — FAIL, 3 call(s), 2 iteration(s)
 - [hop5-title-2025-renter (repeat 1)](#hop5-title-2025-renter-repeat-1) — FAIL, 1 call(s), 2 iteration(s)
 - [hop5-title-2025-renter (repeat 2)](#hop5-title-2025-renter-repeat-2) — FAIL, 1 call(s), 2 iteration(s)
-- [ambiguous-sumo-2025-renter (repeat 1)](#ambiguous-sumo-2025-renter-repeat-1) — FAIL, 4 call(s), 2 iteration(s)
-- [ambiguous-sumo-2025-renter (repeat 2)](#ambiguous-sumo-2025-renter-repeat-2) — FAIL, 4 call(s), 2 iteration(s)
+- [ambiguous-sumo-2025-renter (repeat 1)](#ambiguous-sumo-2025-renter-repeat-1) — PASS, 4 call(s), 2 iteration(s)
+- [ambiguous-sumo-2025-renter (repeat 2)](#ambiguous-sumo-2025-renter-repeat-2) — PASS, 4 call(s), 2 iteration(s)
 - [unanswerable-missing-entity (repeat 1)](#unanswerable-missing-entity-repeat-1) — FAIL, 2 call(s), 2 iteration(s)
 - [unanswerable-missing-entity (repeat 2)](#unanswerable-missing-entity-repeat-2) — FAIL, 2 call(s), 2 iteration(s)
 - [unreachable-total-film-count (repeat 1)](#unreachable-total-film-count-repeat-1) — FAIL, 1 call(s), 2 iteration(s)
@@ -164,7 +164,7 @@ The replacement cost of the film titled ALAMO VIDEOTAPE is not available, as the
 | expected | `16.99` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **search_film** |
@@ -263,7 +263,7 @@ The replacement cost of the film titled "ALAMO VIDEOTAPE" is $4.99.
 | expected | `16.99` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | yes |
 | required tools | search_film, get_film |
 | fabricated arguments | 1 (invented id 1, invented search term 0) |
@@ -358,7 +358,7 @@ However, I can try to find the film by searching for it:
 | expected | `7` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_actor_ids or count_film_actors |
 | never reached | **search_film, get_film_actor_ids or count_film_actors** |
@@ -454,7 +454,7 @@ However, I can try to find the film by searching for it:
 | expected | `7` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_actor_ids or count_film_actors |
 | never reached | **search_film, get_film_actor_ids or count_film_actors** |
@@ -542,7 +542,7 @@ The actor PENELOPE GUINESS is credited in 24 films.
 | expected | `19` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_actor, get_actor_film_ids or count_actor_films |
 | never reached | **search_actor** |
@@ -630,7 +630,7 @@ The actor PENELOPE GUINESS is credited in 24 films.
 | expected | `19` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_actor, get_actor_film_ids or count_actor_films |
 | never reached | **search_actor** |
@@ -728,7 +728,7 @@ The film "ADAPTATION HOLES" is in the language English, with an identifier of 1.
 | expected | `Italian` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film, get_language |
 | never reached | **search_film** |
@@ -826,7 +826,7 @@ The film "ADAPTATION HOLES" is in the language English, with an identifier of 1.
 | expected | `Italian` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film, get_language |
 | never reached | **search_film** |
@@ -914,7 +914,7 @@ It seems that the film "ALIEN CENTER" does not exist in the database or its ID e
 | expected | `Comedy; New; Children` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_category_ids, get_category |
 | never reached | **search_film, get_film_category_ids, get_category** |
@@ -1002,7 +1002,7 @@ It seems that the film "ALIEN CENTER" does not exist in the database or its ID e
 | expected | `Comedy; New; Children` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_category_ids, get_category |
 | never reached | **search_film, get_film_category_ids, get_category** |
@@ -1110,7 +1110,7 @@ The film rented in rental 1 was "INCH JET".
 | expected | `BLANKET BEVERLY` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | yes |
 | required tools | get_rental, get_inventory_item, get_film |
 | fabricated arguments | 2 (invented id 2, invented search term 0) |
@@ -1218,7 +1218,7 @@ The film rented in rental 1 was "INCH JET".
 | expected | `BLANKET BEVERLY` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | yes |
 | required tools | get_rental, get_inventory_item, get_film |
 | fabricated arguments | 2 (invented id 2, invented search term 0) |
@@ -1316,7 +1316,7 @@ The email address of the manager of the store that holds inventory item 1 is sto
 | expected | `hartmann1448@ratkehaley.com` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | get_inventory_item, get_store, get_staff |
 | never reached | **get_inventory_item** |
@@ -1414,7 +1414,7 @@ The email address of the manager of the store that holds inventory item 1 is sto
 | expected | `hartmann1448@ratkehaley.com` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | get_inventory_item, get_store, get_staff |
 | never reached | **get_inventory_item** |
@@ -1548,7 +1548,7 @@ To fix this, we need to pass the correct value for `address_id`. Let's try again
 | expected | `Thailand` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | get_customer, get_address, get_city, get_country |
 | never reached | **get_address, get_city, get_country** |
@@ -1692,7 +1692,7 @@ To fix this, we need to pass the correct value for `address_id`. Let's try again
 | expected | `Thailand` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | get_customer, get_address, get_city, get_country |
 | never reached | **get_address, get_city, get_country** |
@@ -1810,7 +1810,7 @@ The store holding inventory item 1 is located in the city of "A Coruña (La Coru
 | expected | `Boksburg` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | get_inventory_item, get_store, get_address, get_city |
 | never reached | **get_inventory_item** |
@@ -1924,7 +1924,7 @@ Let me try again:
 | expected | `Boksburg` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | get_inventory_item, get_store, get_address, get_city |
 | never reached | **get_inventory_item, get_address, get_city** |
@@ -2019,7 +2019,7 @@ _No tool calls this iteration._
 | expected | `BETTY MILLER` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_inventory_ids, get_inventory_rental_ids, get_customer |
 | never reached | **get_film_inventory_ids, get_inventory_rental_ids, get_customer** |
@@ -2102,7 +2102,7 @@ _No tool calls this iteration._
 | expected | `BETTY MILLER` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_inventory_ids, get_inventory_rental_ids, get_customer |
 | never reached | **get_film_inventory_ids, get_inventory_rental_ids, get_customer** |
@@ -2211,17 +2211,16 @@ The film about a sumo wrestler was not rented in 2025. The search tool did not f
 
 | | |
 |---|---|
-| result | **FAIL** |
+| result | **PASS** |
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
-| declined | no |
-| method | deterministic-substring-v4 |
+| declined | yes |
+| method | deterministic-substring-v5 |
 | scored | no — qualitative exhibit, excluded from every denominator |
 | navigation complete | no |
 | required tools | search_film_description |
 | never reached | **search_film_description** |
 | fabricated arguments | 3 (invented id 3, invented search term 0) |
-| note | `Refused before completing the evidence path required for this decline.` |
 
 Fabricated:
 
@@ -2332,17 +2331,16 @@ The film about a sumo wrestler was not rented in 2025. The search tool did not f
 
 | | |
 |---|---|
-| result | **FAIL** |
+| result | **PASS** |
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
-| declined | no |
-| method | deterministic-substring-v4 |
+| declined | yes |
+| method | deterministic-substring-v5 |
 | scored | no — qualitative exhibit, excluded from every denominator |
 | navigation complete | no |
 | required tools | search_film_description |
 | never reached | **search_film_description** |
 | fabricated arguments | 3 (invented id 3, invented search term 0) |
-| note | `Refused before completing the evidence path required for this decline.` |
 
 Fabricated:
 
@@ -2437,7 +2435,7 @@ The rental rate for the film "CASABLANCA SUPER" is $4.99.
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | yes |
 | required tools | search_film |
 | fabricated arguments | 1 (invented id 1, invented search term 0) |
@@ -2534,7 +2532,7 @@ The rental rate for the film "CASABLANCA SUPER" is $4.99.
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | yes |
 | required tools | search_film |
 | fabricated arguments | 1 (invented id 1, invented search term 0) |
@@ -2625,7 +2623,7 @@ To find the total number of films, I need to call another tool.
 | expected | `1000` |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | count_films |
 | never reached | **count_films** |
@@ -2717,7 +2715,7 @@ To find the total number of films, I need to call another tool.
 | expected | `1000` |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | count_films |
 | never reached | **count_films** |
@@ -2837,7 +2835,7 @@ The language of the film "ALABAMA'S DEVIL" is English.
 | expected | `English` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film, get_language |
 | never reached | **search_film** |
@@ -2962,7 +2960,7 @@ The language of the film "ALABAMA'S DEVIL" is English.
 | expected | `English` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film, get_language |
 | never reached | **search_film** |
@@ -3065,7 +3063,7 @@ The rental rate for the film "CASABLANCA SUPER" is $4.99.
 | expected | `4.99` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | yes |
 | required tools | search_film, get_film |
 | fabricated arguments | 1 (invented id 1, invented search term 0) |
@@ -3161,7 +3159,7 @@ The rental rate for the film "CASABLANCA SUPER" is $4.99.
 | expected | `4.99` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | yes |
 | required tools | search_film, get_film |
 | fabricated arguments | 1 (invented id 1, invented search term 0) |
@@ -3271,7 +3269,7 @@ Note: The tools available to me only allow reading one table at a time, so I had
 | expected | `31` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_actor, get_actor_film_ids or count_actor_films |
 | never reached | **search_actor** |
@@ -3481,7 +3479,7 @@ Angela Astaire is credited in 19 films.
 | expected | `31` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_actor, get_actor_film_ids or count_actor_films |
 | never reached | **search_actor** |
@@ -3634,7 +3632,7 @@ The rental duration of the film "PHANTOM WARDROBE" is 6 days.
 | expected | `6` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **search_film** |
@@ -4032,7 +4030,7 @@ The rental duration of the film "PHANTOM WARDROBE" is 6 days.
 | expected | `6` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | yes |
 | required tools | search_film, get_film |
 | fabricated arguments | 31 (invented id 31, invented search term 0) |
@@ -4148,7 +4146,7 @@ The Steampunk category has at least 145 films. However, the exact number is unkn
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_category |
 | never reached | **search_category** |
@@ -4237,7 +4235,7 @@ The Steampunk category has 145 films.
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_category |
 | never reached | **search_category** |
@@ -4350,7 +4348,7 @@ The film "ACADEMY DINOSAUR" was directed by Jim Wong.
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | yes |
 | required tools | search_film, get_film |
 | fabricated arguments | 1 (invented id 1, invented search term 0) |
@@ -4461,7 +4459,7 @@ The film "ACADEMY DINOSAUR" was directed by Jim Wong.
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | yes |
 | required tools | search_film, get_film |
 | fabricated arguments | 1 (invented id 1, invented search term 0) |
@@ -4588,7 +4586,7 @@ The film "AIRPLANE SIERRA" is not held at more than one store. The tools indicat
 | expected | `Boksburg; Hamilton` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_inventory_ids, get_store, get_address, get_city |
 | never reached | **search_film, get_film_inventory_ids, get_store, get_address, get_city** |
@@ -4710,7 +4708,7 @@ The tools available to me cannot reach the answer because there are no records f
 | expected | `Boksburg; Hamilton` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_inventory_ids, get_store, get_address, get_city |
 | never reached | **search_film, get_film_inventory_ids, get_store, get_address, get_city** |
@@ -4827,7 +4825,7 @@ Since the film_id 1001 does not exist, I will use one of the existing film_ids t
 | expected | `CATE MCQUEEN; 30` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_actor_ids, get_actor, get_actor_film_ids or count_actor_films |
 | never reached | **search_film, get_film_actor_ids, get_actor** |
@@ -4942,7 +4940,7 @@ Since the film_id 1001 does not exist, I will use one of the existing film_ids t
 | expected | `CATE MCQUEEN; 30` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_actor_ids, get_actor, get_actor_film_ids or count_actor_films |
 | never reached | **search_film, get_film_actor_ids, get_actor** |
@@ -5051,7 +5049,7 @@ There are 50 films in the Horror category.
 | expected | `142` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | yes |
 | required tools | search_category, get_category_film_ids or count_category_films |
 | fabricated arguments | 2 (invented id 2, invented search term 0) |
@@ -5160,7 +5158,7 @@ There are 50 films in the Horror category.
 | expected | `142` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | yes |
 | required tools | search_category, get_category_film_ids or count_category_films |
 | fabricated arguments | 2 (invented id 2, invented search term 0) |
@@ -5279,7 +5277,7 @@ The customer Bobby Boudreau lives in Afghanistan.
 | expected | `Anguilla` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_customer, get_customer, get_address, get_city, get_country |
 | never reached | **search_customer** |
@@ -5399,7 +5397,7 @@ The customer Bobby Boudreau lives in Afghanistan.
 | expected | `Anguilla` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_customer, get_customer, get_address, get_city, get_country |
 | never reached | **search_customer** |

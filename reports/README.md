@@ -12,12 +12,19 @@ The JSONL under `runs/` is the dataset and is gitignored; these are the readable
 
 **v3 configuration:** `standard+desc`, 23 questions, n=2 for every model — local and hosted alike, so raw counts are comparable across the two groups for the first time. Tool-call budget **15**, iteration guard **20**, and the prompt permits calling several independent tools in one turn.
 
-Final grades use `deterministic-substring-v4`. `Strict` is correct **and** having reached every
-required tool. Explicitly labelled decline questions must also complete their reachable evidence
-path; surface-relative declines caused by an unavailable tool remain exempt. It is the column to
-read: `Correct` is substring-based and can pass an answer that never navigated.
+`Strict` is correct **and** having reached every required tool; declines are exempt, since a decline
+needs no traversal. It is the column to read — `Correct` is substring-based and can pass an answer
+that never navigated. Whether a decline was reached by the right route is recorded separately, as
+navigation, rather than folded into the grade.
 
 `Budget` counts runs that asked for a tool call after spending all 15.
+
+**Graded with `deterministic-substring-v5`.** The sweep was recorded under v3, whose refusal detection
+could not see a decline phrased around a category — *"there is no Steampunk category in the
+database"* matched nothing at all. Regrading recovered **20 correct declines across 11 models, with
+none lost**, and newly detected 2 genuine over-refusals. Pooled strict moved **57.9% → 60.0%** and
+declines **66.7% → 78.2%**, with over-refusal effectively flat at 16.3% → 16.6%. The raw records are
+untouched; the regraded copies sit alongside them as `.regraded.jsonl`.
 
 
 ## Sweep v3 — `standard+desc`, contract 1.3
@@ -26,26 +33,26 @@ read: `Correct` is substring-based and can pass an answer that never navigated.
 |---|---|---|---|---|---|---|---|---|
 | `gpt-5.4` | [gpt-5-4--standard-desc.md](gpt-5-4--standard-desc.md) | 43/44 | **97.7** | 43 | 8/8 | 0 | 149 | 0 |
 | `qwen3.5:9b` | [qwen3-5-9b--standard-desc.md](qwen3-5-9b--standard-desc.md) | 42/44 | **95.5** | 44 | 8/8 | 0 | 196 | 2 |
-| `gpt-5.5` | [gpt-5-5--standard-desc.md](gpt-5-5--standard-desc.md) | 38/44 | **86.4** | 38 | 6/8 | 4 | 146 | 0 |
+| `gpt-5.5` | [gpt-5-5--standard-desc.md](gpt-5-5--standard-desc.md) | 40/44 | **90.9** | 40 | 8/8 | 4 | 146 | 0 |
+| `gpt-5.6-sol` | [gpt-5-6-sol--standard-desc.md](gpt-5-6-sol--standard-desc.md) | 40/44 | **90.9** | 40 | 8/8 | 4 | 147 | 0 |
+| `gpt-5.6-luna` | [gpt-5-6-luna--standard-desc.md](gpt-5-6-luna--standard-desc.md) | 39/44 | **88.6** | 39 | 8/8 | 4 | 142 | 0 |
 | `qwen3.5:4b` | [qwen3-5-4b--standard-desc.md](qwen3-5-4b--standard-desc.md) | 38/44 | **86.4** | 38 | 8/8 | 2 | 236 | 2 |
-| `gpt-5.6-luna` | [gpt-5-6-luna--standard-desc.md](gpt-5-6-luna--standard-desc.md) | 37/44 | **84.1** | 37 | 6/8 | 4 | 142 | 0 |
 | `gpt-5.6-terra` | [gpt-5-6-terra--standard-desc.md](gpt-5-6-terra--standard-desc.md) | 37/44 | **84.1** | 37 | 7/8 | 6 | 134 | 0 |
-| `gpt-5.6-sol` | [gpt-5-6-sol--standard-desc.md](gpt-5-6-sol--standard-desc.md) | 36/44 | **81.8** | 36 | 4/8 | 4 | 147 | 0 |
+| `qwen3:4b-instruct` | [qwen3-4b-instruct--standard-desc.md](qwen3-4b-instruct--standard-desc.md) | 35/44 | **79.5** | 35 | 8/8 | 6 | 126 | 0 |
 | `qwen3.5:2b-q4_K_M` | [qwen3-5-2b-q4_K_M--standard-desc.md](qwen3-5-2b-q4_K_M--standard-desc.md) | 34/44 | **77.3** | 34 | 6/8 | 2 | 354 | 12 |
-| `qwen3:4b-instruct` | [qwen3-4b-instruct--standard-desc.md](qwen3-4b-instruct--standard-desc.md) | 33/44 | **75.0** | 33 | 6/8 | 6 | 126 | 0 |
-| `gpt-4o-mini` | [gpt-4o-mini--standard-desc.md](gpt-4o-mini--standard-desc.md) | 32/44 | **72.7** | 32 | 5/8 | 7 | 149 | 0 |
-| `gpt-4o` | [gpt-4o--standard-desc.md](gpt-4o--standard-desc.md) | 31/44 | **70.5** | 31 | 5/8 | 8 | 125 | 0 |
-| `gemma4:e4b` | [gemma4-e4b--standard-desc.md](gemma4-e4b--standard-desc.md) | 28/44 | **63.6** | 28 | 4/8 | 8 | 104 | 0 |
-| `gemma4:e2b` | [gemma4-e2b--standard-desc.md](gemma4-e2b--standard-desc.md) | 25/44 | **56.8** | 25 | 3/8 | 8 | 100 | 0 |
+| `gpt-4o` | [gpt-4o--standard-desc.md](gpt-4o--standard-desc.md) | 33/44 | **75.0** | 33 | 7/8 | 8 | 125 | 0 |
+| `gpt-4o-mini` | [gpt-4o-mini--standard-desc.md](gpt-4o-mini--standard-desc.md) | 33/44 | **75.0** | 33 | 6/8 | 7 | 149 | 0 |
+| `gemma4:e4b` | [gemma4-e4b--standard-desc.md](gemma4-e4b--standard-desc.md) | 32/44 | **72.7** | 32 | 8/8 | 8 | 104 | 0 |
+| `gemma4:e2b` | [gemma4-e2b--standard-desc.md](gemma4-e2b--standard-desc.md) | 29/44 | **65.9** | 29 | 7/8 | 8 | 100 | 0 |
+| `qwen2.5:7b` | [qwen2-5-7b--standard-desc.md](qwen2-5-7b--standard-desc.md) | 25/44 | **56.8** | 27 | 8/8 | 12 | 121 | 0 |
+| `ministral-3` | [ministral-3--standard-desc.md](ministral-3--standard-desc.md) | 24/43 | **55.8** | 24 | 7/8 | 10 | 107 | 0 |
 | `qwen3.5:2b` | [qwen3-5-2b--standard-desc.md](qwen3-5-2b--standard-desc.md) | 22/42 | **52.4** | 22 | 2/6 | 6 | 242 | 6 |
-| `qwen2.5:7b` | [qwen2-5-7b--standard-desc.md](qwen2-5-7b--standard-desc.md) | 23/44 | **52.3** | 25 | 6/8 | 12 | 121 | 0 |
-| `ministral-3` | [ministral-3--standard-desc.md](ministral-3--standard-desc.md) | 20/43 | **46.5** | 20 | 3/8 | 10 | 107 | 0 |
 | `qwen2.5:3b` | [qwen2-5-3b--standard-desc.md](qwen2-5-3b--standard-desc.md) | 11/44 | **25.0** | 11 | 5/8 | 9 | 165 | 1 |
+| `hermes3:8b` | [hermes3-8b--standard-desc.md](hermes3-8b--standard-desc.md) | 7/44 | **15.9** | 12 | 5/8 | 5 | 85 | 2 |
 | `mistral-nemo:12b` | [mistral-nemo-12b--standard-desc.md](mistral-nemo-12b--standard-desc.md) | 6/44 | **13.6** | 6 | 6/8 | 11 | 51 | 0 |
-| `hermes3:8b` | [hermes3-8b--standard-desc.md](hermes3-8b--standard-desc.md) | 4/44 | **9.1** | 9 | 2/8 | 5 | 85 | 2 |
+| `llama3.2` | [llama3-2--standard-desc.md](llama3-2--standard-desc.md) | 4/44 | **9.1** | 4 | 4/8 | 6 | 44 | 0 |
 | `llama3.1` | [llama3-1--standard-desc.md](llama3-1--standard-desc.md) | 3/44 | **6.8** | 6 | 0/8 | 11 | 125 | 1 |
-| `llama3.2` | [llama3-2--standard-desc.md](llama3-2--standard-desc.md) | 2/44 | **4.5** | 2 | 2/8 | 4 | 44 | 0 |
-| `qwen2.5:1.5b` | [qwen2-5-1-5b--standard-desc.md](qwen2-5-1-5b--standard-desc.md) | 0/44 | **0.0** | 2 | 0/8 | 2 | 15 | 0 |
+| `qwen2.5:1.5b` | [qwen2-5-1-5b--standard-desc.md](qwen2-5-1-5b--standard-desc.md) | 2/44 | **4.5** | 4 | 2/8 | 2 | 15 | 0 |
 
 ## Not re-run — zero tool calls, contract 1.1
 

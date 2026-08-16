@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Unit tests for the grader. It is the only component whose output is a published number,
+       and every defect it has had was found by reading JSONL by hand rather than by a test. -->
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <!-- Test names read as sentences; the analyser's naming rule fights that for no benefit. -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit.v3" Version="3.1.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\MovieAgent.Evaluation\MovieAgent.Evaluation.csproj" />
+  </ItemGroup>
+
+</Project>

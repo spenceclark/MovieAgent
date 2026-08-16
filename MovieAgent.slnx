@@ -4,4 +4,7 @@
     <Project Path="src/MovieAgent.Agent/MovieAgent.Agent.csproj" />
     <Project Path="src/MovieAgent.Evaluation/MovieAgent.Evaluation.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MovieAgent.Evaluation.Tests/MovieAgent.Evaluation.Tests.csproj" />
+  </Folder>
 </Solution>

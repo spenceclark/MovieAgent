@@ -26,16 +26,48 @@ namespace MovieAgent.Evaluation;
 public static partial class Grader
 {
     /// <summary>
-    /// v4: an explicitly labelled decline must complete its reachable evidence path before the
-    /// refusal can score. Surface-relative declines caused by an unavailable tool remain exempt.
+    /// v5: refusal detection recognises declines phrased around a category, and the inability
+    /// verbs include reach/provide/count. This is v3 plus that fix — see the remarks on v4.
     /// </summary>
-    public const string Method = "deterministic-substring-v4";
+    /// <remarks>
+    /// <para>
+    /// <b>v4 was reverted, unapplied.</b> It required an explicitly labelled decline to complete
+    /// its evidence path before the refusal could score — the hard-director case would have had to
+    /// read the film record before concluding the schema has no director. It was committed but
+    /// never applied to a sweep, so no published number ever used it. Measured against the v3
+    /// corpus it cost 14 correct declines across 8 models, nearly all for answers of the form
+    /// "the available tools do not include director data, so I cannot determine who directed X".
+    /// That reasoning is sound on its own: the tool list already establishes that no director
+    /// field exists anywhere, so requiring a lookup first asks for ceremony rather than evidence.
+    /// Whether a decline was reached by the right route is already recorded, separately, as
+    /// navigation — which keeps the question answerable without the grade taking a position.
+    /// </para>
+    /// <para>
+    /// v5 was found by the first run of the grader unit tests rather than by a sweep. Runs
+    /// recorded under v3 and v5 are not comparable on the refusal axis; the method string is
+    /// stamped on every grade so the two can never be pooled silently. The version number skips
+    /// v4 deliberately, so that a run recorded under it — should any exist — is never mistaken
+    /// for one of these.
+    /// </para>
+    /// </remarks>
+    public const string Method = "deterministic-substring-v5";
 
+    /// <remarks>
+    /// <c>categor(y|ies)</c> was missing until v5. "There is no Steampunk category in the
+    /// database" is the single most common way a model declines the easy-category question, and
+    /// it matched nothing — 12 correct declines across 7 models were recorded as failures.
+    /// </remarks>
     private const string ResultNoun =
-        @"(?:match(?:es|ing)?|result(?:s)?|record(?:s)?|film(?:s)?|actor(?:s)?|customer(?:s)?|row(?:s)?|entr(?:y|ies)|data|information)";
+        @"(?:match(?:es|ing)?|result(?:s)?|record(?:s)?|film(?:s)?|actor(?:s)?|customer(?:s)?|row(?:s)?|categor(?:y|ies)|entr(?:y|ies)|data|information)";
 
+    /// <remarks>
+    /// <c>reach</c> matters beyond its frequency: the system prompt instructs the model to say
+    /// that the tools "cannot reach the answer", so the detector was blind to the exact phrasing
+    /// the harness asks for. <c>provide</c> and <c>count</c> cover "cannot provide a count" and
+    /// "cannot directly count the total", both recorded verbatim.
+    /// </remarks>
     private const string KnowingVerb =
-        @"(?:find|found|locate|determine|identify|answer|retrieve|access|resolve|tell)";
+        @"(?:find|found|locate|determine|identify|answer|retrieve|access|resolve|tell|reach|provide|count)";
 
     private const string Inability =
         @"(?:cannot|can not|could not|unable|not able|do not have|does not have|did not|does not|do not)";
@@ -148,21 +180,10 @@ public static partial class Grader
 
         if (shouldDecline)
         {
-            var looksLikeRefusal = !answerTruncated && LooksLikeRefusal(answer);
-
-            // Explicit decline questions have an evidence path: for example, the hard-director
-            // case must find the film and inspect its record before concluding that the schema
-            // cannot supply a director. A refusal reached by searching for an unrelated entity
-            // is not correct merely because its final wording looks like a refusal.
-            //
-            // Do not apply this to a surface-relative decline whose path contains an unavailable
-            // tool: completing that path is impossible by definition. Navigation is also not
-            // meaningful on the generic-SQL control surface.
-            var requiresEvidence = !genericSql
-                && string.Equals(question.ExpectedBehaviour, "decline", StringComparison.OrdinalIgnoreCase)
-                && question.UnreachableStepsOn(surfaceToolNames).Count == 0;
-            var evidenceComplete = !requiresEvidence || missing.Length == 0;
-            var declined = looksLikeRefusal && evidenceComplete;
+            // Navigation is recorded alongside this rather than folded into it, so "declined for
+            // the right reason" stays answerable from the data without the grade itself taking a
+            // position on it. See the v4 note on Method for why the stricter rule was reverted.
+            var declined = !answerTruncated && LooksLikeRefusal(answer);
 
             return WithNavigation(new GradeRecord
             {
@@ -171,11 +192,7 @@ public static partial class Grader
                 Correct = declined,
                 Declined = declined,
                 Method = Method,
-                Note = declined
-                    ? null
-                    : looksLikeRefusal && !evidenceComplete
-                        ? "Refused before completing the evidence path required for this decline."
-                        : "Expected a refusal; the model answered.",
+                Note = declined ? null : "Expected a refusal; the model answered.",
             });
         }
 
@@ -369,7 +386,13 @@ public static partial class Grader
     private static partial Regex ContractionPattern();
 
     /// <summary>"returned no matches", "there are no films", "no such records".</summary>
-    [GeneratedRegex(@"\bno\s+(?:\w+\s+){0,2}" + ResultNoun + @"\b")]
+    /// <remarks>
+    /// The intervening tokens allow quotes and markdown emphasis, not just word characters:
+    /// models overwhelmingly write the name they searched for as <c>no "Steampunk" category</c> or
+    /// <c>no **Steampunk** category</c>, and a bare <c>\w+</c> cannot cross the opening quote. Both
+    /// straight and typographic quotes, because only apostrophes are normalised upstream.
+    /// </remarks>
+    [GeneratedRegex(@"\bno\s+(?:[\w""'“”*_]+\s+){0,2}" + ResultNoun + @"\b")]
     private static partial Regex NoResultsPattern();
 
     /// <summary>

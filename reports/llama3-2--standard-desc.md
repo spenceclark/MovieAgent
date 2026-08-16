@@ -1,4 +1,4 @@
-# Run report: runs-20260815-161152.regraded-v4.jsonl
+# Run report: runs-20260815-161152.regraded.jsonl
 
 | | |
 |---|---|
@@ -6,7 +6,7 @@
 | model(s) | llama3.2 |
 | surface(s) | standard+desc |
 | questions | 23 |
-| correct | 2/44 scored run(s) |
+| correct | 4/44 scored run(s) |
 | outcomes | Answered 46 |
 | tool calls | 46 total, 1.00 per run |
 | iterations | 92 total, 2.00 per run |
@@ -55,8 +55,8 @@
 - [nearmiss-word-order (repeat 2)](#nearmiss-word-order-repeat-2) — FAIL, 1 call(s), 2 iteration(s)
 - [decline-easy-category (repeat 1)](#decline-easy-category-repeat-1) — FAIL, 1 call(s), 2 iteration(s)
 - [decline-easy-category (repeat 2)](#decline-easy-category-repeat-2) — FAIL, 1 call(s), 2 iteration(s)
-- [decline-hard-director (repeat 1)](#decline-hard-director-repeat-1) — FAIL, 1 call(s), 2 iteration(s)
-- [decline-hard-director (repeat 2)](#decline-hard-director-repeat-2) — FAIL, 1 call(s), 2 iteration(s)
+- [decline-hard-director (repeat 1)](#decline-hard-director-repeat-1) — PASS, 1 call(s), 2 iteration(s)
+- [decline-hard-director (repeat 2)](#decline-hard-director-repeat-2) — PASS, 1 call(s), 2 iteration(s)
 - [fanout-store-cities (repeat 1)](#fanout-store-cities-repeat-1) — FAIL, 1 call(s), 2 iteration(s)
 - [fanout-store-cities (repeat 2)](#fanout-store-cities-repeat-2) — FAIL, 1 call(s), 2 iteration(s)
 - [fanout-actor-most-films (repeat 1)](#fanout-actor-most-films-repeat-1) — FAIL, 1 call(s), 2 iteration(s)
@@ -147,7 +147,7 @@ Can you please provide me with the `film_id` for the film "ALAMO VIDEOTAPE"? I c
 | expected | `16.99` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **search_film, get_film** |
@@ -244,7 +244,7 @@ Can you please provide me with the `film_id` for the film "ALAMO VIDEOTAPE"? I c
 | expected | `16.99` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **search_film, get_film** |
@@ -345,7 +345,7 @@ If you need help finding it, I can call another tool to get the ID for you.
 | expected | `7` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_actor_ids or count_film_actors |
 | never reached | **search_film, get_film_actor_ids or count_film_actors** |
@@ -443,7 +443,7 @@ If you need help finding it, I can call another tool to get the ID for you.
 | expected | `7` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_actor_ids or count_film_actors |
 | never reached | **search_film, get_film_actor_ids or count_film_actors** |
@@ -541,7 +541,7 @@ To find out how many films Penelope Guinness is credited in, I need to try a dif
 | expected | `19` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_actor, get_actor_film_ids or count_actor_films |
 | never reached | **search_actor, get_actor_film_ids or count_actor_films** |
@@ -637,7 +637,7 @@ To find out how many films Penelope Guinness is credited in, I need to try a dif
 | expected | `19` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_actor, get_actor_film_ids or count_actor_films |
 | never reached | **search_actor, get_actor_film_ids or count_actor_films** |
@@ -729,7 +729,7 @@ Can you please provide the actual title of the film, "Adaptation Holes", and I'l
 | expected | `Italian` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film, get_language |
 | never reached | **search_film, get_film, get_language** |
@@ -825,7 +825,7 @@ Can you please provide the actual title of the film, "Adaptation Holes", and I'l
 | expected | `Italian` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film, get_language |
 | never reached | **search_film, get_film, get_language** |
@@ -925,7 +925,7 @@ Can I call the "get_category_ids" tool for you?
 | expected | `Comedy; New; Children` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_category_ids, get_category |
 | never reached | **search_film, get_film_category_ids, get_category** |
@@ -1026,7 +1026,7 @@ Can I call the "get_category_ids" tool for you?
 | expected | `Comedy; New; Children` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_category_ids, get_category |
 | never reached | **search_film, get_film_category_ids, get_category** |
@@ -1119,7 +1119,7 @@ The film rented in rental 1 is identified by inventory ID 367.
 | expected | `BLANKET BEVERLY` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | get_rental, get_inventory_item, get_film |
 | never reached | **get_inventory_item, get_film** |
@@ -1203,7 +1203,7 @@ The film rented in rental 1 is identified by inventory ID 367.
 | expected | `BLANKET BEVERLY` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | get_rental, get_inventory_item, get_film |
 | never reached | **get_inventory_item, get_film** |
@@ -1291,7 +1291,7 @@ Can I try calling the "get_staff" tool to get the staff member associated with i
 | expected | `hartmann1448@ratkehaley.com` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | get_inventory_item, get_store, get_staff |
 | never reached | **get_inventory_item, get_store, get_staff** |
@@ -1388,7 +1388,7 @@ Can I try calling the "get_staff" tool to get the staff member associated with i
 | expected | `hartmann1448@ratkehaley.com` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | get_inventory_item, get_store, get_staff |
 | never reached | **get_inventory_item, get_store, get_staff** |
@@ -1481,7 +1481,7 @@ Customer 42 lives in Mexico.
 | expected | `Thailand` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | get_customer, get_address, get_city, get_country |
 | never reached | **get_address, get_city, get_country** |
@@ -1565,7 +1565,7 @@ Customer 42 lives in Mexico.
 | expected | `Thailand` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | get_customer, get_address, get_city, get_country |
 | never reached | **get_address, get_city, get_country** |
@@ -1649,7 +1649,7 @@ The store with inventory item 1 is located at the city identified by address ID 
 | expected | `Boksburg` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | get_inventory_item, get_store, get_address, get_city |
 | never reached | **get_inventory_item, get_address, get_city** |
@@ -1733,7 +1733,7 @@ The store with inventory item 1 is located at the city identified by address ID 
 | expected | `Boksburg` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | get_inventory_item, get_store, get_address, get_city |
 | never reached | **get_inventory_item, get_address, get_city** |
@@ -1825,7 +1825,7 @@ Can you please provide me with the `rental_id` of the film "Elizabeth Shane"? Th
 | expected | `BETTY MILLER` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_inventory_ids, get_inventory_rental_ids, get_customer |
 | never reached | **search_film, get_film_inventory_ids, get_inventory_rental_ids, get_customer** |
@@ -1925,7 +1925,7 @@ Can you please provide me with the `rental_id` of the film "Elizabeth Shane"? Th
 | expected | `BETTY MILLER` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_inventory_ids, get_inventory_rental_ids, get_customer |
 | never reached | **search_film, get_film_inventory_ids, get_inventory_rental_ids, get_customer** |
@@ -2025,7 +2025,7 @@ If you need help finding the film ID, I can also try searching by description or
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | scored | no — qualitative exhibit, excluded from every denominator |
 | navigation complete | no |
 | required tools | search_film_description |
@@ -2128,7 +2128,7 @@ If you need help finding the film ID, I can also try searching by description or
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | scored | no — qualitative exhibit, excluded from every denominator |
 | navigation complete | no |
 | required tools | search_film_description |
@@ -2231,7 +2231,7 @@ Let me try again. Since we don't have the film ID, let's search for the film tit
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film |
 | never reached | **search_film** |
@@ -2332,7 +2332,7 @@ Let me try again. Since we don't have the film ID, let's search for the film tit
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film |
 | never reached | **search_film** |
@@ -2425,7 +2425,7 @@ Unfortunately, we cannot retrieve the total number of films in the catalogue usi
 | expected | `1000` |
 | expected behaviour | decline |
 | declined | yes |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | count_films |
 | never reached | **count_films** |
@@ -2512,7 +2512,7 @@ Unfortunately, we cannot retrieve the total number of films in the catalogue usi
 | expected | `1000` |
 | expected behaviour | decline |
 | declined | yes |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | count_films |
 | never reached | **count_films** |
@@ -2605,7 +2605,7 @@ First, let me search for the film's ID:
 | expected | `English` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film, get_language |
 | never reached | **search_film, get_film, get_language** |
@@ -2703,7 +2703,7 @@ First, let me search for the film's ID:
 | expected | `English` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film, get_language |
 | never reached | **search_film, get_film, get_language** |
@@ -2799,7 +2799,7 @@ Can you please provide me with the `film_id` for the film "CASABLANCA NIGHTS"? I
 | expected | `4.99` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **search_film, get_film** |
@@ -2896,7 +2896,7 @@ Can you please provide me with the `film_id` for the film "CASABLANCA NIGHTS"? I
 | expected | `4.99` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **search_film, get_film** |
@@ -2997,7 +2997,7 @@ Let me try again. Can I call the "get_actor" tool to get the Angela Astaire's ID
 | expected | `31` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_actor, get_actor_film_ids or count_actor_films |
 | never reached | **search_actor, get_actor_film_ids or count_actor_films** |
@@ -3098,7 +3098,7 @@ Let me try again. Can I call the "get_actor" tool to get the Angela Astaire's ID
 | expected | `31` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_actor, get_actor_film_ids or count_actor_films |
 | never reached | **search_actor, get_actor_film_ids or count_actor_films** |
@@ -3194,14 +3194,14 @@ Let me try again, and this time, I'll search for the film title to get the renta
 | result | **FAIL** |
 | expected | `6` |
 | expected behaviour | answer |
-| declined | no |
-| method | deterministic-substring-v4 |
+| declined | yes |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **search_film, get_film** |
 | fabricated arguments | 1 (invented id 1, invented search term 0) |
 | schema errors | 1 |
-| note | `No number in the answer.` |
+| note | `Declined an answerable question.` |
 
 Fabricated:
 
@@ -3291,14 +3291,14 @@ Let me try again, and this time, I'll search for the film title to get the renta
 | result | **FAIL** |
 | expected | `6` |
 | expected behaviour | answer |
-| declined | no |
-| method | deterministic-substring-v4 |
+| declined | yes |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **search_film, get_film** |
 | fabricated arguments | 1 (invented id 1, invented search term 0) |
 | schema errors | 1 |
-| note | `No number in the answer.` |
+| note | `Declined an answerable question.` |
 
 Fabricated:
 
@@ -3389,7 +3389,7 @@ Can I get the list of categories?
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | yes |
 | required tools | search_category |
 | fabricated arguments | 0 (invented id 0, invented search term 0) |
@@ -3476,7 +3476,7 @@ Can I get the list of categories?
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | yes |
 | required tools | search_category |
 | fabricated arguments | 0 (invented id 0, invented search term 0) |
@@ -3559,16 +3559,15 @@ If you'd like, I can also try searching for the director's name separately. Woul
 
 | | |
 |---|---|
-| result | **FAIL** |
+| result | **PASS** |
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
-| declined | no |
-| method | deterministic-substring-v4 |
+| declined | yes |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **search_film, get_film** |
 | fabricated arguments | 1 (invented id 0, invented search term 1) |
-| note | `Refused before completing the evidence path required for this decline.` |
 
 Fabricated:
 
@@ -3651,16 +3650,15 @@ If you'd like, I can also try searching for the director's name separately. Woul
 
 | | |
 |---|---|
-| result | **FAIL** |
+| result | **PASS** |
 | expected | _(a refusal)_ |
 | expected behaviour | decline |
-| declined | no |
-| method | deterministic-substring-v4 |
+| declined | yes |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film |
 | never reached | **search_film, get_film** |
 | fabricated arguments | 1 (invented id 0, invented search term 1) |
-| note | `Refused before completing the evidence path required for this decline.` |
 
 Fabricated:
 
@@ -3751,7 +3749,7 @@ Can I call the "get_store" tool again, but this time with a specific film ID? Fo
 | expected | `Boksburg; Hamilton` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_inventory_ids, get_store, get_address, get_city |
 | never reached | **search_film, get_film_inventory_ids, get_store, get_address, get_city** |
@@ -3852,7 +3850,7 @@ Can I call the "get_store" tool again, but this time with a specific film ID? Fo
 | expected | `Boksburg; Hamilton` |
 | expected behaviour | answer |
 | declined | yes |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_inventory_ids, get_store, get_address, get_city |
 | never reached | **search_film, get_film_inventory_ids, get_store, get_address, get_city** |
@@ -3949,7 +3947,7 @@ The actor who has appeared in the most films is not specified in this output. I'
 | expected | `CATE MCQUEEN; 30` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_actor_ids, get_actor, get_actor_film_ids or count_actor_films |
 | never reached | **search_film, get_actor, get_actor_film_ids or count_actor_films** |
@@ -4041,7 +4039,7 @@ The actor who has appeared in the most films is not specified in this output. I'
 | expected | `CATE MCQUEEN; 30` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_film, get_film_actor_ids, get_actor, get_actor_film_ids or count_actor_films |
 | never reached | **search_film, get_actor, get_actor_film_ids or count_actor_films** |
@@ -4129,7 +4127,7 @@ There is 1 film in the Horror category.
 | expected | `142` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_category, get_category_film_ids or count_category_films |
 | never reached | **get_category_film_ids or count_category_films** |
@@ -4213,7 +4211,7 @@ There is 1 film in the Horror category.
 | expected | `142` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_category, get_category_film_ids or count_category_films |
 | never reached | **get_category_film_ids or count_category_films** |
@@ -4297,7 +4295,7 @@ Bobby Boudreau lives in the United States.
 | expected | `Anguilla` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_customer, get_customer, get_address, get_city, get_country |
 | never reached | **search_customer, get_address, get_city, get_country** |
@@ -4384,7 +4382,7 @@ Bobby Boudreau lives in the United States.
 | expected | `Anguilla` |
 | expected behaviour | answer |
 | declined | no |
-| method | deterministic-substring-v4 |
+| method | deterministic-substring-v5 |
 | navigation complete | no |
 | required tools | search_customer, get_customer, get_address, get_city, get_country |
 | never reached | **search_customer, get_address, get_city, get_country** |

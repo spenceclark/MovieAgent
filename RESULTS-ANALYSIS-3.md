@@ -3,12 +3,24 @@
 **22 models, 23 questions, n=2, 1,012 recorded runs.** Output-format contract **1.3**, and a changed
 system prompt.
 
-> **Final-score update:** the recorded v3 runs were regraded with
-> `deterministic-substring-v4`. An explicitly labelled decline now earns credit only after its
-> reachable evidence path has been completed. This removes 14 unsupported refusal passes across
-> seven models. The leaderboard below, the generated reports and the `sweep v3` workbook tab are
-> updated. Historical v2→v3 aggregate comparisons later in this document retain their original
-> grading provenance and should not be quoted as final v4 comparisons unless v2 is also regraded.
+> **Final-score update: regraded under `deterministic-substring-v5`.** The sweep was recorded under
+> v3, whose refusal detection had no `category` among its result nouns and no *reach* / *provide* /
+> *count* among its inability verbs — so *"there is no Steampunk category in the database"*, the
+> commonest way a model declines the easy-category question, matched nothing at all. Found by the
+> grader's unit tests on their first run, not by a sweep. Regrading **recovered 20 correct declines
+> across 11 models with none lost**, and newly detected 2 genuine over-refusals. **Both** the v2 and
+> v3 arms were regraded, so every comparison below is like-for-like. The leaderboard, the generated
+> reports and the `sweep v3` workbook tab are updated; the raw records are untouched, with the
+> regraded copies alongside as `.regraded.jsonl`. Every number that moved is listed in
+> [what the regrade changed](#what-the-regrade-changed).
+>
+> A separate rule committed as **v4 — requiring a decline to complete its evidence path — was
+> reverted, unapplied.** It never reached a published number. Measured against this corpus it would
+> have cost **14 correct declines across 8 models**, nearly all for answers of the form *"the
+> available tools do not include director data, so I cannot determine who directed X"*. That
+> reasoning stands on its own: the tool list already establishes that no director field exists
+> anywhere, so demanding a lookup first asks for ceremony rather than evidence. Whether a decline
+> was reached by the right route is already recorded separately, as navigation.
 
 > This supersedes [RESULTS-ANALYSIS-2.md](RESULTS-ANALYSIS-2.md), which supersedes
 > [RESULTS-ANALYSIS.md](RESULTS-ANALYSIS.md). Both are kept: v2 is the reference for what the
@@ -64,9 +76,8 @@ zero fan-out, verified end to end against the database.
 
 ## v3 leaderboard
 
-Strict = correct **and**, where the question requires traversal, having reached every required tool.
-Explicit decline questions must complete their reachable evidence path; surface-relative declines
-caused by an unavailable tool remain exempt.
+Strict = correct **and**, where the question requires traversal, having reached every required tool;
+declines are exempt, since a decline needs no traversal.
 Read this column. `Correct` is substring-based and will pass an answer that never navigated — see
 [the worked example](#the-gap-between-correct-and-strict) below, which is the top local model
 getting a question visibly wrong and being marked right.
@@ -75,26 +86,26 @@ getting a question visibly wrong and being marked right.
 |---|---|---|---|---|---|---|---|
 | 1 | gpt-5.4 | 43/44 | **97.7** | 35/36 | 8/8 | 0 | 3.39 |
 | 2 | qwen3.5:9b | 42/44 | **95.5** | 36/36 | 8/8 | 0 | 4.45 |
-| 3= | gpt-5.5 | 38/44 | 86.4 | 32/36 | 6/8 | 4 | 3.32 |
-| 3= | qwen3.5:4b | 38/44 | 86.4 | 30/36 | 8/8 | 2 | 5.36 |
-| 5= | gpt-5.6-luna | 37/44 | 84.1 | 31/36 | 6/8 | 4 | 3.23 |
-| 5= | gpt-5.6-terra | 37/44 | 84.1 | 30/36 | 7/8 | 6 | 3.05 |
-| 7 | gpt-5.6-sol | 36/44 | 81.8 | 32/36 | 4/8 | 4 | 3.34 |
-| 8 | qwen3.5:2b-q4_K_M | 34/44 | 77.3 | 28/36 | 6/8 | 2 | 8.05 |
-| 9 | qwen3:4b-instruct | 33/44 | 75.0 | 27/36 | 6/8 | 6 | 2.86 |
-| 10 | gpt-4o-mini | 32/44 | 72.7 | 27/36 | 5/8 | 7 | 3.39 |
-| 11 | gpt-4o | 31/44 | 70.5 | 26/36 | 5/8 | 8 | 2.84 |
-| 12 | gemma4:e4b | 28/44 | 63.6 | 24/36 | 4/8 | 8 | 2.36 |
-| 13 | gemma4:e2b | 25/44 | 56.8 | 22/36 | 3/8 | 8 | 2.27 |
-| 14 | qwen3.5:2b | 22/42 | 52.4 | 20/36 | 2/6 | 6 | 5.76 |
-| 15 | qwen2.5:7b | 23/44 | 52.3 | 19/36 | 6/8 | 12 | 2.75 |
-| 16 | ministral-3 | 20/43 | 46.5 | 17/35 | 3/8 | 10 | 2.49 |
+| 3= | gpt-5.5 | 40/44 | 90.9 | 32/36 | 8/8 | 4 | 3.32 |
+| 3= | gpt-5.6-sol | 40/44 | 90.9 | 32/36 | 8/8 | 4 | 3.34 |
+| 5 | gpt-5.6-luna | 39/44 | 88.6 | 31/36 | 8/8 | 4 | 3.23 |
+| 6 | qwen3.5:4b | 38/44 | 86.4 | 30/36 | 8/8 | 2 | 5.36 |
+| 7 | gpt-5.6-terra | 37/44 | 84.1 | 30/36 | 7/8 | 6 | 3.05 |
+| 8 | qwen3:4b-instruct | 35/44 | 79.5 | 27/36 | 8/8 | 6 | 2.86 |
+| 9 | qwen3.5:2b-q4_K_M | 34/44 | 77.3 | 28/36 | 6/8 | 2 | 8.05 |
+| 10= | gpt-4o | 33/44 | 75.0 | 26/36 | 7/8 | 8 | 2.84 |
+| 10= | gpt-4o-mini | 33/44 | 75.0 | 27/36 | 6/8 | 7 | 3.39 |
+| 12 | gemma4:e4b | 32/44 | 72.7 | 24/36 | 8/8 | 8 | 2.36 |
+| 13 | gemma4:e2b | 29/44 | 65.9 | 22/36 | 7/8 | 8 | 2.27 |
+| 14 | qwen2.5:7b | 25/44 | 56.8 | 19/36 | 8/8 | 12 | 2.75 |
+| 15 | ministral-3 | 24/43 | 55.8 | 17/35 | 7/8 | 10 | 2.49 |
+| 16 | qwen3.5:2b | 22/42 | 52.4 | 20/36 | 2/6 | 6 | 5.76 |
 | 17 | qwen2.5:3b | 11/44 | 25.0 | 6/36 | 5/8 | 9 | 3.75 |
-| 18 | mistral-nemo:12b | 6/44 | 13.6 | 0/36 | 6/8 | 11 | 1.16 |
-| 19 | hermes3:8b | 4/44 | 9.1 | 7/36 | 2/8 | 5 | 1.93 |
-| 20 | llama3.1 | 3/44 | 6.8 | 6/36 | 0/8 | 11 | 2.84 |
-| 21 | llama3.2 | 2/44 | 4.5 | 0/36 | 2/8 | 4 | 1.00 |
-| 22 | qwen2.5:1.5b | 0/44 | 0.0 | 2/36 | 0/8 | 2 | 0.34 |
+| 18 | hermes3:8b | 7/44 | 15.9 | 7/36 | 5/8 | 5 | 1.93 |
+| 19 | mistral-nemo:12b | 6/44 | 13.6 | 0/36 | 6/8 | 11 | 1.16 |
+| 20 | llama3.2 | 4/44 | 9.1 | 0/36 | 4/8 | 6 | 1.00 |
+| 21 | llama3.1 | 3/44 | 6.8 | 6/36 | 0/8 | 11 | 2.84 |
+| 22 | qwen2.5:1.5b | 2/44 | 4.5 | 2/36 | 2/8 | 2 | 0.34 |
 
 **Not re-run:** deepseek-r1:8b, phi4-mini, command-r7b, granite3.3:8b, mistral. All five made
 literally zero tool calls in v1, and neither a call budget nor permission to batch can move a model
@@ -107,12 +118,10 @@ that never calls a tool.
 
 ## The headline: the batching advantage was real, and one model proves it
 
-Under the pre-v4 grading used for the original sweep comparison, pooled strict was
-**57.0% → 57.3%**, with 7 models improving, 6 unchanged and 9 worse on the 21 common questions.
-That comparison is retained as audit history, not as a final v4 statistic: v2 has not been
-regraded with the evidence-path rule. The narrower conclusion still holds independently:
-**the batching loophole was not badly distorting most of the leaderboard.** Most models never
-used it.
+Overall, v3 is nearly a wash. On the 21 questions common to both sweeps, with **both arms regraded
+under v5**, pooled strict moves **58.5% → 59.5%** and 8 models improve, 7 are unchanged and 7 get
+worse. That is worth saying plainly: **the batching loophole was not badly distorting the
+leaderboard.** Most models never used it.
 
 Where it mattered, it mattered enormously, and `qwen3.5:2b-q4_K_M` is the case. It was v2's
 headline mover — the 1.8GB model that scored 75% on near-miss recovery, an axis where gpt-4o scores
@@ -264,14 +273,16 @@ figures therefore measure instruction-*following* rather than any disposition to
 models were re-run with that one sentence removed and nothing else changed, which gives the prompt
 a different hash and keeps the two populations separable in the recorded data.
 
+Both arms are regraded under v5, so the comparison is like-for-like.
+
 | model | arm | strict | correct declines | over-refusals | answers |
 |---|---|---|---|---|---|
 | qwen3.5:9b | with | 42/44 | **8/8** | 0 | 36/36 |
 | qwen3.5:9b | **without** | 42/44 | **8/8** | 0 | 36/36 |
 | qwen3.5:2b-q4_K_M | with | 34/44 | **6/8** | 2 | 28/36 |
 | qwen3.5:2b-q4_K_M | **without** | 30/44 | **6/8** | 0 | 24/36 |
-| gpt-4o-mini | with | 32/44 | **5/8** | 7 | 27/36 |
-| gpt-4o-mini | **without** | 33/44 | **5/8** | 6 | 28/36 |
+| gpt-4o-mini | with | 33/44 | **6/8** | 7 | 27/36 |
+| gpt-4o-mini | **without** | 34/44 | **6/8** | 6 | 28/36 |
 
 **Correct declines are identical in all three models.** Over-refusals do not rise; they fall
 slightly or hold. The sentence is not what produces the refusal behaviour, so the refusal numbers
@@ -288,6 +299,51 @@ sweep: `hop2-film-cost` went from 2 calls to hitting the budget at 15, while `ne
 went the other way, 14 calls to 5, and started passing. It is a model whose trajectories are
 extremely sensitive to any perturbation of the prompt — which is a finding about that model, not
 about the sentence.
+
+---
+
+## What the regrade changed
+
+Everything that moved between the recorded v3 grades and the published ones, for cross-checking
+against anything written from the earlier figures. **Eleven models moved; eleven did not.**
+
+| model | strict before | strict after | declines before | after | over-ref before | after |
+|---|---|---|---|---|---|---|
+| `gpt-5.5` | 38/44 (86.4%) | **40/44 (90.9%)** | 6/8 | **8/8** | 4/36 | 4/36 |
+| `gpt-5.6-sol` | 38/44 (86.4%) | **40/44 (90.9%)** | 6/8 | **8/8** | 4/36 | 4/36 |
+| `gpt-5.6-luna` | 37/44 (84.1%) | **39/44 (88.6%)** | 6/8 | **8/8** | 4/36 | 4/36 |
+| `gpt-4o` | 31/44 (70.5%) | **33/44 (75.0%)** | 5/8 | **7/8** | 8/36 | 8/36 |
+| `gpt-4o-mini` | 32/44 (72.7%) | **33/44 (75.0%)** | 5/8 | **6/8** | 7/36 | 7/36 |
+| `gemma4:e4b` | 28/44 (63.6%) | **32/44 (72.7%)** | 4/8 | **8/8** | 8/36 | 8/36 |
+| `gemma4:e2b` | 28/44 (63.6%) | **29/44 (65.9%)** | 6/8 | **7/8** | 8/36 | 8/36 |
+| `qwen2.5:7b` | 23/44 (52.3%) | **25/44 (56.8%)** | 6/8 | **8/8** | 12/36 | 12/36 |
+| `ministral-3` | 21/43 (48.8%) | **24/43 (55.8%)** | 4/8 | **7/8** | 10/35 | 10/35 |
+| `hermes3:8b` | 6/44 (13.6%) | **7/44 (15.9%)** | 4/8 | **5/8** | 5/36 | 5/36 |
+| `llama3.2` | 4/44 (9.1%) | **4/44 (9.1%)** | 4/8 | **4/8** | 4/36 | 6/36 |
+
+**Unchanged:** `qwen2.5:1.5b`, `qwen2.5:3b`, `qwen3:4b-instruct`, `qwen3.5:4b`, `qwen3.5:9b`,
+`qwen3.5:2b`, `qwen3.5:2b-q4_K_M`, `llama3.1`, `mistral-nemo:12b`, `gpt-5.4`, `gpt-5.6-terra`.
+
+| pooled, sweep v3 | recorded | published | |
+|---|---|---|---|
+| strict | 559/965 — 57.9% | **579/965 — 60.0%** | **+2.1pp** |
+| correct declines | 116/174 — 66.7% | **136/174 — 78.2%** | **+11.5pp** |
+| over-refusals | 129/791 — 16.3% | 131/791 — 16.6% | +0.3pp |
+
+Three things worth noting about the shape of that.
+
+**Over-refusal barely moves.** A refusal detector that has been widened could easily start reading
+ordinary answers as refusals, which would inflate over-refusal and quietly convert correct answers
+into failures. Two runs moved, both `llama3.2` on `nearmiss-word-order`, and both are genuine — it
+did decline an answerable question. So the +11.5pp on declines is recovery, not a threshold slide.
+
+**Near-miss strict is unchanged for every single model.** The sharpest discriminator in the sweep,
+and the one the headline finding rests on, is untouched by the regrade.
+
+**Rank changes are mostly of one kind.** `gpt-5.5` and `gpt-5.6-sol` rise to joint third,
+`gemma4:e4b` gains 9.1pp, and `gpt-4o` and `gpt-4o-mini` converge on 75.0%. `qwen3.5:4b` falls from
+joint third to sixth **without its own score changing at all** — 38/44 before and after, simply
+overtaken. Eight models now score 8/8 on declines, against four before.
 
 ---
 

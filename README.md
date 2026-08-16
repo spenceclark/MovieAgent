@@ -1,450 +1,390 @@
-# MovieAgent
+# Can a small model be a good agent?
 
-A research harness for measuring how well a local LLM performs as an agent against a
-relational database. Not a product. The output is measurements.
+## Background
 
-**What is measured:** whether the model can plan and execute a multi-hop dependency chain,
-where the arguments to the third tool call are only obtainable from the results of the first
-and second. Accuracy by hop depth is the headline. Secondary: tool calls per question, token
-cost, correct refusal on unanswerable questions, run-to-run variance.
+My previous posts had looked at using local LLMs to generate content, but what about using them in an agentic capacity? Can a local model on a modest GPU succeed as an agent, and work through a multi-stage action?
 
-## The no-shortcuts constraint
+There are already hundreds of articles and videos on hooking a local LLM up to agents like OpenCode, Hermes Agent or OpenClaw that run on your PC and assist you with local tasks. What I wanted to do was build my own agent to perform a specific set of tasks, instrument it and then compare different models to see what capabilities they truly offer.
 
-Any tool that resolves a relationship server-side destroys the thing being measured. So:
+## Concept
 
-- **No `execute_sql`, no `get_schema`.** These collapse any question to one or two calls.
-  Available on exactly one surface, `sql-shortcut`, which exists to *measure* that claim rather
-  than assert it — see [The control surface](#the-control-surface). Never on the measured surfaces.
-- **One table per tool.** Enforced by [ToolCatalogueValidator](src/MovieAgent.Agent/Tools/ToolCatalogueValidator.cs),
-  which rejects any descriptor containing a join or a second `FROM`.
-- **Foreign keys are returned raw.** `get_film` returns `language_id = 1`, never `"English"`.
-- **No pre-joined views.** Pagila's seven (`film_list`, `actor_info`,
-  `nicer_but_slower_film_list`, `sales_by_store`, `sales_by_film_category`, `staff_list`,
-  `customer_list`) are on a banned list, along with `information_schema` and `pg_catalog`.
-- **No search tool will list a whole table.** Every text parameter has a two-character
-  minimum, so there is no list-everything back door.
-- **No repository layer.** The abstraction sits at "execute this parameterised SQL, return
-  rows as text", with a thin tool layer above.
+**What is an Agent? It is a workflow where the model gets to decide the sequence.** Given tools and a goal, it chooses what to call, sees the results, and steers. Once it reaches its goal, or decides the goal is not achievable, it returns to the caller with a response.
 
-The validator runs at DI registration over the **whole catalogue**, not just the selected
-surface, so a violating descriptor cannot hide in an unused tool and be switched on later.
+If you can write the correct sequence down in advance, you don't need an agent — you need a script. The agent is only earning its keep when the second step depends on what the first one returned.
 
-## Layout
+## Method
 
-Three projects. Two of them are the interesting ones.
+First question: what is this agent going to do? It needs to be something that requires information the model doesn’t have, and would mean it has to request that information from my harness via tool calls.
 
-| Project | Role |
+After looking at a few ideas, I landed on the Sakila example database that is very well-known from MySQL and has a Postgres port called Pagila. It represents a fictional video rental company with a schema covering films, actors, inventory and customers. And as it is all fabricated data built from recombined fragments of real names — Penelope Guiness, Nick Wahlberg — it is close enough to feel real without being anyone. That means a model can't answer from training data; it has to use the tools. Though as it turns out, some of them try anyway.
+
+A harness would make a set of tools available to the model, and these tools would enable the model to query the data. Then the model could be presented with a question about the data, and it would have to work on its own to try and find the answer.
+
+An obvious shortcut here would be to give the model two tools - `get_schema` and `execute_sql` - then the model would be able to compile its own queries and execute them to answer the question. But that would not really put it to the test, as it could solve any question in only two tool calls. I wanted it to reason over multiple steps.
+
+So I decided each tool would offer a specific read query that only operated one level deep - if the model wanted to get to data several joins deep, it would need to understand it should make multiple chained tool calls to achieve it.
+
+The agent loop would present the question to the model and handle its request to call tools. The tools themselves were all just SQL queries into the data. The harness allowed up to 20 iterations, with a budget of 15 executed tool calls. Once that budget was exhausted, further tool requests were refused, but the model could still return an answer using the evidence it had already collected.
+
+This also fits under the increasingly broad label **agentic RAG**. Unlike conventional RAG, where retrieval is usually a fixed step performed before generation, the model controls retrieval from inside the agent loop: it chooses which database tool to call, inspects the result, and decides whether to retrieve again, try a different route, answer or decline.
+
+There are no embeddings or vector searches here—the retrieved evidence is structured database data—but the underlying pattern is the same: generation is grounded in external information that the agent retrieves dynamically.
+
+## Questions
+
+Once that was done, I could compile a list of questions with their answers and the known routes to get those answers, as well as some red herrings and unanswerable questions to try and throw them off.
+
+These questions could then be fed to each model and its responses graded to see which produced the most correct answers.
+
+That would then enable me to score each model on how many questions it got right, near-misses, lucky guesses or outright hallucinations.
+
+Example question JSON:
+
+```json
+{
+    "id": "hop2-film-cost",
+    "question": "What is the replacement cost of the film titled ALAMO VIDEOTAPE?",
+    "expected_hops": 2,
+    "expected_behaviour": "answer",
+    "expected_answer": "16.99",
+    "answer_kind": "numeric",
+    "requires_tools": [ [ "search_film" ], [ "get_film" ] ]
+}
+```
+
+So in this example it asks a simple question about a specific film. The model is expected to call the `search_film` tool first to get the `film_id` and then call `get_film` with that ID to get the replacement cost. The expected answer is 16.99.
+
+Here is a more complicated example requiring four hops:
+
+```json
+{
+  "id": "hop4-inventory-store-city",
+  "question": "Inventory item 1 is held at a store. Which city is that store in?",
+  "expected_hops": 4,
+  "expected_behaviour": "answer",
+  "expected_answer": "Boksburg",
+  "answer_kind": "exact",
+  "requires_tools": [ [ "get_inventory_item" ], [ "get_store" ],
+                      [ "get_address" ], [ "get_city" ] ]
+}
+```
+
+Here is an example of a question the model should not be able to answer:
+
+```json
+{
+  "id": "unanswerable-missing-entity",
+  "question": "What is the rental rate of the film ZOMBIE ACCOUNTANT PARADOX?",
+  "expected_hops": 1,
+  "expected_behaviour": "decline",
+  "expected_answer": null,
+  "answer_kind": "decline",
+  "requires_tools": [ [ "search_film" ] ],
+  "note": "REFUSAL CASE 1 - film does not exist. Correct behaviour: search, get NO ROWS, say so. Any rental rate given is a hallucination."
+}
+```
+
+So with this example, the model would get marked down if it tried to answer this question with a value as that would be a clear hallucination.
+
+Questions fall into these categories:
+
+| Category | Questions |
 | --- | --- |
-| **`MovieAgent.Agent`** | **The agent.** The tool loop, the iteration cap, the JSONL recorder, and `Tools/` — the catalogue of tools the model is offered, argument binding, and the frozen output contract. References nothing: the loop can be read start to finish without leaving the project. |
-| **`MovieAgent.Evaluation`** | **The measurement.** Eval set, grader, eval runner, regrader, eval-set verifier. |
-| `MovieAgent` | Everything incidental: Postgres access (`Data/`), chat client construction (`Llm/`, the only place OpenAI or OllamaSharp appear), the console host and commands (`EntryPoints/`). The executable. |
+| Chain | Answer is reachable by chaining multiple tool calls - e.g. `search_film` into `get_film` |
+| Declines | Questions that are not answerable. The model should refuse to give an answer. |
+| Near-miss | The question has a deliberate mistake. But the model should be able to recover from it and continue. Example: “What is the rental rate of the film CASABLANCA NIGHTS?”. There is no film with that name but there is one called CASABLANCA SUPER. If the model retries the search but with just the first word it will get that hit and can continue. |
+| Fan-out | Questions where one stage returns multiple rows and the model must chain down each leg. Example: “The film AIRPLANE SIERRA is held at more than one store. Which cities are those stores in?” The model calls `search_film` and then `get_film_inventory_ids` to find out which stores hold it. But then for EACH store it needs to go `get_store` > `get_address` > `get_city` |
+| Truncation | When results are truncated, the tool reports both the total and displayed counts—for example, ‘142 rows, showing the first 50.’ This tests whether the model uses 142 rather than answering 50. |
 
-The dependency direction is `MovieAgent` → `MovieAgent.Evaluation` → `MovieAgent.Agent`, and
-`MovieAgent.Agent` depends on no project at all. That is why the small contracts the agent needs
-from infrastructure — `ISqlQueryExecutor`, `IWireCapture`, the options classes — live in
-`MovieAgent.Agent/Abstractions` and `MovieAgent.Agent/Configuration` and are *implemented* one
-layer up, rather than sitting in a shared `Core` project underneath everything.
+## Code
 
-## Commands
+While this article is less about the code, and more about the method and results, there are a few parts I wanted to get into. The full code is available at <https://github.com/spenceclark/MovieAgent>
 
-```bash
-dotnet run --project src/MovieAgent -- check
+The solution is structured into three projects:
+
+- `MovieAgent` - Manages the IHost, CLI parsing, dependency injection and SQL execution. This can be ignored pretty much for the purposes of this article. It is boilerplate code mostly.
+- `MovieAgent.Agent` - Contains the code for the main agent loop. This may be interesting to anyone wanting to see how an agent can be implemented in dotnet.
+- `MovieAgent.Evaluation` - Defines the questions we will ask the agents, and contains all the evaluation and grading logic. This was the core of the work done.
+
+The main agent loop consists of up to 20 iterations of:
+
+- Submit accumulated conversation (@i=0 this is just the initial question)
+- Preserve Response
+- Execute any tools requested
+- Augment context with tool responses
+- Repeat or break when given an answer
+
+The loop may run for up to 20 iterations, but the real work budget is 15 executed tool calls.
+
+In the main evaluation, the model never sees or writes SQL. Each tool maps to a fixed query, and the arguments supplied by the model map one-to-one to SQL parameters.
+
+```csharp
+new()
+{
+    Name = "search_category",
+    Description = "Find film categories whose name contains the given text. Returns category_id and name.",
+    Table = "category",
+    Sql = "select category_id, name from category where name ilike '%' || @name_contains || '%' order by category_id",
+    Parameters =
+    [
+        ToolParameter.Term(
+            "name_contains",
+            "Text to look for in the category name.")
+    ],
+    EmptyResultHint = "No category name contains that text.",
+},
 ```
 
-| Command | Purpose |
-| --- | --- |
-| `check` | Database reachable, model reachable, **and model actually emits tool calls**. |
-| `verify` | Re-run every eval `reference_sql` and compare with recorded answers. Run before measuring. |
-| `tools [surface]` | Print a surface exactly as the model will see it, schemas and SQL included. |
-| `ask "<question>"` | One ad-hoc question. Recorded, ungraded. |
-| `eval [id-filter]` | Run the eval set, grade it, append to the recorder. |
-| `sqlguard` | Exercise the `sql-shortcut` read-only guard, including the queries it must refuse. |
-| `report <file.jsonl>` | Render a recorded file as a markdown transcript — see below. |
+This deliberately small, read-only surface is not a complete production data-access layer. The fixed query and parameter binding prevent conventional SQL injection, but a production system would still need authorization, query timeouts, result limits, auditing and careful control over which data each tool can expose.
 
-### Reading a run
+The evaluation code in MovieAgent.Evaluation is where I spent most of the development time. It determines whether an answer is correct and, more importantly, how the model reached it.
 
-```bash
-dotnet run --project src/MovieAgent -- report runs/runs-20260812-231344.jsonl
+- Did it hallucinate tool-call names, parameter names, or parameter values?
+- Did it call every expected tool required to reach the answer?
+- Did it repeat calls or hit the tool-call budget or iteration guard?
+- Did it produce the right answer without completing the evidence path?
+
+> That distinction between producing the right answer and reaching it through an evidence-backed path turned out to matter far more than I expected.
+
+## Evaluation Setup
+
+> These tests were carried out on a RTX 3070 with 8GB of VRAM. Models were chosen to fit inside this limit. A couple overflowed onto CPU slightly, but these tests do not measure wall-time. Ollama was used to run the models.
+
+The final sweep tested 22 models on 23 questions, twice each: 1,012 recorded runs.
+
+One deliberately ambiguous question was retained as an unscored exhibit, leaving 44 scored runs per model.
+
+Two model-specific server failures reduced the scored denominators for `qwen3.5:2b` and `ministral-3`.
+
+Parameters:
+
+- seed 42, temperature 0, thinking off;
+- 2,500 maximum output tokens;
+- the 15-call budget and 20-iteration guard;
+- five historical zero-call models were not rerun in v3.
+- 8k context size in Ollama
+
+### Sweep history
+
+- **V1** established the baseline and exposed two harness problems: local and hosted models received differently formatted tool results, and one supposedly terminal error incorrectly encouraged retries.
+- **V2** fixed those problems, but later revealed another fairness issue: models that batched calls could perform more work than models making one call per turn.
+- **V3** replaced the iteration-based allowance with an equal 15-tool-call budget, raised the iteration guard to 20, removed the instruction to call tools one at a time, and reran the final evaluation.
+
+All scores and rankings in this post come from **V3**. V1 and V2 are retained only as development and audit history; their results are not directly comparable with V3.
+
+## Findings
+
+The headline result was not simply that a local model came close to the hosted leaders. In several of the tests that mattered most, the strongest local models behaved better.
+
+### Clean chains stop discriminating among capable tool users
+
+Clean chains strongly separated the weakest models, some of which never chained at all. Once a model could reliably use the tool channel, however, the metric quickly saturated: GPT‑4o and GPT‑4o‑mini both scored 22/22, as did most of the GPT‑5 line. Recovery and fan-out were more useful for separating the stronger models.
+
+Hop depth by itself did not predict difficulty: five-hop questions scored 67%, compared with 53% for two-hop and 52% for four-hop. The buckets are confounded by question type—the two-hop bucket contains the hostile near-misses, while the five-hop questions are clean chains.
+
+### Recovery is the real discriminator
+
+The tests that separated the models were those in which an initial lookup failed and the model had to adapt. `Qwen3.5:9b` and the much smaller 4B model both recovered 6/8 near-misses. That compares favourably with `GPT-4o` and `GPT-4o-mini`: both were perfect on the clean chain tests, but recovered only 0/8 and 1/8 respectively.
+
+Both `GPT-4o` models correctly identify the miss, but then stop. They don’t fabricate anything but they don’t try to recover either.
+
+Meanwhile:
+
+- GPT-5.4: 8/8
+- Qwen 3.5 9B: 6/8
+- Qwen 3.5 4B: 6/8
+- GPT-5.5/ 5.6 Sol / 5.6 Luna: 4/8
+
+*Example*:
+
+The question: “*What language is the film ALABAMA'S DEVIL in?*” is a trick question. The real film name is ALABAMA DEVIL.
+
+`GPT-4o` calls the tool `search_film`, gets no rows and returns “*There is no film titled "ALABAMA'S DEVIL" in the database. Please check the spelling or try a different title*.”. That response is factually defensible, but the question is recoverable.
+
+`GPT-5.4` and `Qwen3.5:9b`, however, try again by searching for a single word - and finding the `film_id` that way.
+
+Not every near-miss was equally near, though. Another trick question is: “*What is the rental rate of the film CASABLANCA NIGHTS?*” where the real name is CASABLANCA SUPER. Resolving *ALABAMA'S DEVIL* to *ALABAMA DEVIL* is little more than punctuation tolerance. Resolving *CASABLANCA NIGHTS* to *CASABLANCA SUPER* requires a stronger assumption: the films share one distinctive word, but the rest of the title is different.
+
+`GPT-5.6` Luna and Sol found *CASABLANCA SUPER* and correctly identified it as the database's only Casablanca title, but stopped rather than assume it was the film the user meant. Under this evaluation that is a failure, because they did not retrieve the rental rate. It is not, however, obviously bad judgement. `Qwen3.5:9b` produced the more useful compromise: it explained that the requested title did not exist, then gave the price of *CASABLANCA SUPER* conditionally.
+
+The result therefore measures more than persistence. It also exposes where each model places its threshold for resolving an uncertain entity without asking the user.
+
+### The prompt was not causing the refusals
+
+The system prompt told models that declining was correct when the available data could not answer the question. That creates an obvious concern: were the refusal scores measuring judgement, or merely obedience to that instruction?
+
+To test this, I reran three models after removing that single sentence. Their correct-decline scores did not change:
+
+- `Qwen3.5:9b`: 8/8 with the instruction, 8/8 without it
+- `Qwen3.5:2b-q4_K_M`: 6/8 with it, 6/8 without it
+- `GPT-4o-mini`: 6/8 with it, 6/8 without it
+
+Removing the instruction did not leave the runs untouched. For `qwen3.5:9b`, only 2 of 46 trajectories were bit-identical across the two versions, yet its outcomes remained exactly the same: 42/44 strict, 36/36 answerable questions, 8/8 correct declines and no over-refusals. The Q4 2B model did lose four answerable runs, dropping from 34/44 to 30/44 strict, but its correct declines remained 6/8. The ablation therefore supports a narrow conclusion: the instruction was not producing the refusal behaviour, even though changing the prompt could affect other answers.
+
+### An answer can contain the right number for the wrong reason
+
+Qwen3.5‑9B passed all 44 scored runs under the ordinary grader, including all 36 answerable runs, but scored 42/44 under strict grading.
+
+Both disputed runs ask for the rental duration of `PHANTOM WARDROBE`, expected answer **6**. The model successfully recovers the real title, `WARDROBE PHANTOM`, but never calls the tool containing the film’s configured rental duration. Instead, it explores actual rental records, performs date arithmetic, and concludes:
+
+> “The answer is likely 3 days.”
+
+It nevertheless passes the substring matcher because its long working includes one rental lasting approximately six days. Neither repeat earns strict credit, because the model never retrieved the configured rental duration and its stated answer was wrong.
+
+### Lower precision scored higher—but behaved much worse
+
+The 2B-parameter Qwen3.5 model was tested in both an 8-bit (Q8_0) and 4-bit (Q4_K_M) quantization. The expectation was the 8-bit would perform better.
+
+| | Chain % | Near-Miss % | Fan-Out % | Truncation % |
+| --- | --- | --- | --- | --- |
+| Q4_K_M | 91 | 25 | 100 | 100 |
+| Q8_0 | 82 | 0 | 0 | 100 |
+
+The 8-bit version fared slightly worse on the chain tests, failed every near-miss and fan-out test, and passed every truncation test.
+
+A fan-out example: “*The film AIRPLANE SIERRA is held at more than one store. Which cities are those stores in?*”. Q8 correctly found both stores and their addresses. On the first branch it passed the address_id, 129, to get_city as though it were a city_id — returning Cuauhtémoc, a real city with an unrelated id. That produced the wrong city, which it then reported confidently.
+
+The Q4 build scored much higher overall, but it was also far less controlled: it exhausted the call budget in 12 runs, made 90 over-budget calls and attempted 102 blocked repeats. In this evaluation, lower precision produced the better score—but not the cleaner agent.
+
+### One-call-only behaviour
+
+Llama3.2 consistently failed to issue a second tool call. It scored 4/44, with all four points coming from two unanswerable questions it correctly declined.
+
+For one question - “What is the replacement cost of the film titled ALAMO VIDEOTAPE?”  it decided to jump straight to `get_film` tool with two parameters it made up:
+
+`{"film_id":"search_film","title_contains":"ALAMO VIDEOTAPE"}`
+
+It then turned around and asked the user for the `film_id`.
+
+```text
+It seems that the `get_film` tool requires a `film_id` instead of a `title_contains`. I'll try again with a different approach.
+
+Can you please provide me with the `film_id` for the film "ALAMO VIDEOTAPE"? I can then use this value to look up the replacement cost.
 ```
 
-Writes `runs-20260812-231344.report.md` alongside the input (or to a path given as the second
-argument). The JSONL stays the dataset; this is for reading it. Each run gets:
+### Hard Failures
 
-1. **The question and the run's stats** — outcome, model, surface, iterations against the cap,
-   tool calls, tokens, elapsed, run id.
-2. **Every iteration** — finish reason, tokens, elapsed, content hash, any reasoning text (folded
-   into a `<details>` block, since it can run to thousands of characters), what the model said, and
-   then **every tool call** with its arguments, its result, rows returned, elapsed, and whether it
-   errored, repeated or was blocked.
-3. **The grading** — the answer given, pass/fail, what was expected, and the diagnostics.
+Despite their templates or metadata declaring tool support, some models failed completely to emit a single well-formed tool call.
 
-Fields a surface leaves undefined are omitted, not printed as zero: a `sql-shortcut` report has no
-navigation or argument-provenance rows, because with one generic tool those are undefined rather
-than zero, and a zero reads as a measured failure.
+These models were:
 
-Long values are clipped with a `… (+N chars)` marker rather than truncated silently. Reports land
-in `runs/`, which is gitignored, so they are never committed by accident.
-
-Everything is overridable by environment variable:
-
-```bash
-Agent__ToolSurface=minimal Agent__Repeats=5 Llm__Ollama__Model=qwen3:4b-instruct dotnet run --project src/MovieAgent -- eval
-```
-
-## Tool surfaces
-
-Three, selected by `Agent:ToolSurface`. Defined in [ToolSurfaces.cs](src/MovieAgent.Agent/Tools/ToolSurfaces.cs).
-
-| Surface | Tools | Contents |
+| Name | Variant | Tag |
 | --- | --- | --- |
-| `minimal` | 6 | search + read on film, actor, customer only. No junction tools, so relationship questions are genuinely unreachable. |
-| `standard` | 24 | Adds lookup tables and junction tools. The fixed control. |
-| `standard+desc` | 25 | Standard plus `search_film_description`. |
-| `enriched` | 29 | Standard plus the count tools. |
-| `sql-shortcut` | 2 | **The control.** `get_schema` and `execute_sql`. Chain questions only. |
+| Mistral | latest | mistral |
+| Granite3.3 | 8b | granite3.3:8b |
+| Command R | 7b | command-r7b |
+| DeepSeek R1 | 8b | deepseek-r1:8b |
+| Phi4 | mini | phi4-mini |
 
-## The control surface
+DeepSeek and Mistral attempted some form of tool call but embedded a hallucinated format inside the response text. Mistral for example:
 
-The no-shortcuts constraint above is the premise of the whole harness, and it was asserted rather
-than measured. `sql-shortcut` measures it: two tools, `get_schema` and a read-only `execute_sql`,
-and the ten linear FK-resolution questions from v1. It separates two failures the main sweep
-conflates — **a model that cannot emit a structured tool call at all**, and **a model that can call
-one tool but cannot compose a chain across turns**. The first should fail here too, because
-`execute_sql` is still a tool call. The second should improve, because one call now suffices.
+```markdown
+To find the replacement cost of the film titled "ALAMO VIDEOTAPE", we first need to search for the film's ID using the `search_film` tool:
 
-> **A model scoring higher on `sql-shortcut` is not a better agent.** Text-to-SQL has vastly more
-> training data behind it than agentic tool composition. An improvement here shows that *the task
-> changed*. Read the delta against the same model's chain score, never the absolute number. The
-> `eval` output prints this caveat with every result on this surface, and the surface refuses to
-> run any question outside the chain family.
+'''
+search_film(title_contains="alamo videotape")
+'''
 
-Design notes, all deliberate:
+Assuming the result is a list containing one row with the film's ID, let's call it `film_id`. Then we can use the `get_film` tool to get the replacement cost:
 
-- The control has its own system prompt. The standard prompt says each tool reads one table and
-  cannot join, which is false on this surface; `SystemPrompt.ForSurface` selects a SQL-specific
-  prompt that describes PostgreSQL, permits joins and tells the model to inspect the schema first.
-  The prompt and its hash are recorded on every run.
-- The two tools live in `SqlShortcutCatalogue`, **not** `ToolCatalogue`, so `ToolCatalogueValidator`
-  keeps proving the main catalogue is join-free and one-table-per-tool. The validator now also
-  rejects any non-descriptor tool that turns up in the main catalogue, so the split cannot rot.
-- `execute_sql` is guarded twice: [`SqlShortcutGuard`](src/MovieAgent.Agent/Tools/SqlShortcutGuard.cs)
-  screens the text (single statement, `SELECT`/`WITH` only, no DDL/DML, no banned objects) and the
-  query then runs inside a Postgres `READ ONLY` transaction, which refuses a write regardless of
-  what the regex missed. Run `dotnet run --project src/MovieAgent -- sqlguard` to exercise both.
-- Database errors come back to the model verbatim and marked retryable — the opposite of the
-  descriptor path, where a SQL failure is a harness fault the model cannot fix. Here the model
-  wrote the query, so Postgres's complaint is legitimate feedback and acting on it is measured.
-- `get_schema` returns a static listing generated from the live database, not a live
-  `information_schema` query, because introspection is on the banned list and the ban applies to
-  the harness's own SQL too.
-- Grading changes shape, not strictness. `requires_tools` names tools that do not exist here, so
-  navigation, hop depth and argument provenance are recorded as **null, not zero** — zero reads as
-  a failure, and the truth is the question was not asked. Answer correctness is graded identically.
+'''
+get_film(film_id=film_id)
+'''
 
-Both variants differ from `standard` by exactly one thing, so any accuracy difference has one
-candidate cause rather than two.
-
-`search_film` matches titles by substring; `search_film_description` matches plot descriptions
-by Postgres full-text search (`plainto_tsquery`), which ANDs the stemmed terms and ignores word
-order and stopwords. That is not a convenience: with a contiguous `ILIKE` the model paraphrased
-*"Sumo Wrestler in Ancient Japan"* as `"sumo wrestler ancient Japan"`, lost the stopword, got
-`NO ROWS` at hop 1, and the run measured string luck instead of planning.
-
-## Tool output contract
-
-Frozen, versioned (`ToolOutputFormat.Version`, written into every run record). Pipe-delimited,
-LF line endings, header row, then a count line.
-
-```
-film_id | title
-15 | ALIEN CENTER
-1 rows
+The output will contain the replacement cost as one of its fields.
 ```
 
-- Zero rows returns the literal `NO ROWS`, plus a hint. Never an empty string.
-- Truncation is always stated with the true total: `40 rows, showing first 20`.
-- Errors state whether retrying can help: `ERROR: ... You may retry this tool with different
-  arguments.` versus `ERROR: ... Retrying will not help.`
+Phi4 emitted **structurally correct tool-call JSON, with real tool names and real parameter names** — into the content channel, missing only the `<|tool_call|>` delimiter its own chat template requires.
 
-Model arguments are untrusted. [ToolArgumentBinder](src/MovieAgent.Agent/Tools/ToolArgumentBinder.cs)
-re-checks every value against the declared type and range before it reaches Npgsql, regardless
-of what the advertised JSON schema said.
+Command R refused almost every answerable question. Granite behaved differently: it often described or printed plausible tool calls in ordinary response text, but never entered the structured tool channel.
 
-## The run record
-
-One JSONL line per run, written to `runs/` (relative to the working directory), flushed on
-every write. Each line is self-contained — full question, surface, tool list, model, seed,
-temperature, `thinking` (was extended reasoning on for this run — `Agent:Thinking`, mapped to
-`ChatOptions.Reasoning`), system prompt and its hash, output-format version — so a mixed file is
-still analysable and analysis never has to join against a config file.
-
-`Agent:Thinking` is echoed everywhere a run's configuration is visible, not just the JSONL: the
-`check`, `ask`, `eval` and `determinism` console output, and the `eval` startup log line, all
-state `thinking on`/`thinking off` next to the model name. `check` in particular builds its own
-`ChatOptions` separately from the agent loop (it is a connectivity probe, not a real run), so it
-sets `Reasoning` from `AgentOptions.ToReasoningOptions()` explicitly rather than leaving it
-unset — otherwise `check` would silently validate a different reasoning configuration than
-`eval`/`ask` actually use, defeating the point of running it first.
-
-### Ollama and OpenAI are not sent the same tool output
-
-A second round-trip gap in the same adapter, found the same way. OllamaSharp serialises the whole
-`FunctionResultContent` into the tool message body, so a local model reads
-
-```
-{"CallId":"call_1","Result":"film_id | title\n11 | ALAMO VIDEOTAPE\n1 rows"}
+```text
+I'm sorry, but I don't have access to information about replacement costs. The available tools allow me to search for films by title, retrieve film details including actor and category information, find customers or actors, get language details, address and store information, and more. However, there's no tool provided to retrieve the replacement cost of a film.
 ```
 
-— one line, newlines escaped — where the OpenAI SDK sends the same result as raw text with real
-newlines and the id in its own `tool_call_id` field. The frozen output contract above therefore
-reached hosted models intact and local models mangled. The assistant message also goes out with
-`"id": null`, so `Agent:NormaliseToolCallIds` never reaches the wire on that path.
+So Command R knew it had tools, but because no single tool exactly matched what it needed, it refused to go further.
 
-`Agent:RepairOllamaToolMessages` rewrites the outbound message to match the OpenAI shape. **Off by
-default**, because turning it on changes what the model is sent and so invalidates comparison
-against everything already recorded. Measured on three models, each against a repair-off control:
-gemma4:e4b is unaffected (identical score, per-hop split and calls per run); qwen3.5:4b moves
-32/42 → 30/42; qwen3.5:9b moves 38/42 → **40/42**. Both controls reproduced their baselines exactly,
-so those are causal. The consistent effect is *less persistence* — fewer calls, more willingness to
-decline — which costs 4b some deep chains and costs 9b nothing, because its answers were already at
-ceiling. Turn it on for new sweeps.
+## Scores
 
-`Agent:SendReasoningEffort` (default true) suppresses the reasoning-effort parameter entirely.
-gpt-4o and gpt-4o-mini reject it with `HTTP 400: Unrecognized request argument supplied:
-reasoning_effort` — effort is a reasoning-model parameter and they are not reasoning models. Note
-this is **not** a general "reasoning off" switch: on Ollama the same options object becomes `think`,
-and an absent `think` is not `think:false`, so a thinking model would fall back to its own default.
+`Raw` = answer contained the expected value. Substring matching, so it can pass an answer the model never actually looked up.
 
-### `Agent:Thinking` does not give the model continuity of thought
+`Strict` = correct **and**, where the question requires traversal, having reached every required tool.
 
-On Ollama, reasoning is **not carried between iterations** — each turn's `thinking` output is
-generated, paid for in tokens, and thrown away before the next request goes out. Verified
-against the raw wire traffic (`Agent:CaptureWireTraffic=true`), not inferred:
+`Answers` = correct answerable questions, on the same raw matching as `Raw`.
 
-- Ollama's response for a turn does include a populated `message.thinking` field, and
-  OllamaSharp correctly maps it into a `Microsoft.Extensions.AI.TextReasoningContent` — this
-  harness's own `messages` list genuinely contains it going into the next iteration.
-- The *next* request's re-sent assistant message carries no `thinking` field and no trace of
-  that reasoning text anywhere in the request body — confirmed by diffing the actual JSON, not
-  by inspecting types.
-- This isn't a protocol ceiling: `OllamaSharp.Models.Chat.Message.Thinking` is a settable
-  property on the same type used to build outbound history, so the wire format has no evident
-  objection to carrying it. The mapping simply doesn't do it on the way out (OllamaSharp 5.4.30,
-  Microsoft.Extensions.AI 10.8.3). Reads correctly, never gets replayed.
+`Declines` = correctly declined unanswerable questions.
 
-So with `Agent:Thinking` on, the model re-derives its plan from tool-call history alone every
-turn — the "let me reconsider" you see in `assistant_text` is that re-derivation happening in
-the open, not evidence of continuity. This harness cannot fix it without reaching past
-`IChatClient` into OllamaSharp-specific types, which would break the one architectural rule
-that's held since session one (every provider goes through the same abstraction — see the
-`AgentLoop` remarks). So instead it's measured: every iteration's `reasoning_text` is recorded
-in full (`RunRecord.Iterations[].ReasoningText`), and `scripts/analyse.py` reports total
-reasoning volume generated per run. Read `Agent:Thinking=true` as "single-turn reasoning,
-regenerated from scratch every iteration," not as "the model thinks continuously across the
-loop" — the two would produce very different numbers and only the first is what you're getting.
+`Over-ref` = over-refusals - declined to answer an answerable question.
 
-Per iteration: input/output tokens, elapsed ms, finish reason, assistant text, and every tool
-call with the arguments **exactly as the model sent them** and the exact text returned.
+`Calls` = average tool calls per run.
 
-Token counts sit at iteration level, not per tool call, because the provider reports usage per
-model turn. Attributing tokens to individual calls would be a fabrication.
+| # | Model | Raw | Strict | Strict Score | Answers | Declines | Over-ref | Calls |
+| :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: | ---: |
+| 1 | gpt-5.4 | 43/44 | 43/44 | **97.7** | 35/36 | 8/8 | 0 | 3.39 |
+| 2 | qwen3.5:9b | 44/44 | 42/44 | **95.5** | 36/36 | 8/8 | 0 | 4.45 |
+| 3= | gpt-5.5 | 40/44 | 40/44 | **90.9** | 32/36 | 8/8 | 4 | 3.32 |
+| 3= | gpt-5.6-sol | 40/44 | 40/44 | **90.9** | 32/36 | 8/8 | 4 | 3.34 |
+| 5 | gpt-5.6-luna | 39/44 | 39/44 | **88.6** | 31/36 | 8/8 | 4 | 3.23 |
+| 6 | qwen3.5:4b | 38/44 | 38/44 | **86.4** | 30/36 | 8/8 | 2 | 5.36 |
+| 7 | gpt-5.6-terra | 37/44 | 37/44 | **84.1** | 30/36 | 7/8 | 6 | 3.05 |
+| 8 | qwen3:4b-instruct | 35/44 | 35/44 | **79.5** | 27/36 | 8/8 | 6 | 2.86 |
+| 9 | qwen3.5:2b-q4_K_M | 34/44 | 34/44 | **77.3** | 28/36 | 6/8 | 2 | 8.05 |
+| 10= | gpt-4o | 33/44 | 33/44 | **75.0** | 26/36 | 7/8 | 8 | 2.84 |
+| 10= | gpt-4o-mini | 33/44 | 33/44 | **75.0** | 27/36 | 6/8 | 7 | 3.39 |
+| 12 | gemma4:e4b | 32/44 | 32/44 | **72.7** | 24/36 | 8/8 | 8 | 2.36 |
+| 13 | gemma4:e2b | 29/44 | 29/44 | **65.9** | 22/36 | 7/8 | 8 | 2.27 |
+| 14 | qwen2.5:7b | 27/44 | 25/44 | **56.8** | 19/36 | 8/8 | 12 | 2.75 |
+| 15 | ministral-3 | 24/43 | 24/43 | **55.8** | 17/35 | 7/8 | 10 | 2.49 |
+| 16 | qwen3.5:2b | 22/42 | 22/42 | **52.4** | 20/36 | 2/6 | 6 | 5.76 |
+| 17 | qwen2.5:3b | 11/44 | 11/44 | **25.0** | 6/36 | 5/8 | 9 | 3.75 |
+| 18 | hermes3:8b | 12/44 | 7/44 | **15.9** | 7/36 | 5/8 | 5 | 1.93 |
+| 19 | mistral-nemo:12b | 6/44 | 6/44 | **13.6** | 0/36 | 6/8 | 11 | 1.16 |
+| 20 | llama3.2 | 4/44 | 4/44 | **9.1** | 0/36 | 4/8 | 6 | 1.00 |
+| 21 | llama3.1 | 6/44 | 3/44 | **6.8** | 6/36 | 0/8 | 11 | 2.84 |
+| 22 | qwen2.5:1.5b | 4/44 | 2/44 | **4.5** | 2/36 | 2/8 | 2 | 0.34 |
+| — | deepseek-r1:8b | — | — | — | — | — | — | — |
+| — | phi4-mini | — | — | — | — | — | — | — |
+| — | command-r7b | — | — | — | — | — | — | — |
+| — | granite3.3:8b | — | — | — | — | — | — | — |
+| — | mistral | — | — | — | — | — | — | — |
 
-Outcomes are `Answered`, `IterationCapReached`, `Errored`. Cap hits are data, not errors.
+> All models were run twice per question, so one changed run moves a score by 2.3 percentage points. The local models produced identical outcomes across their two repeats, while several hosted-model repeats differed. Small gaps involving hosted models should therefore not be read as precise rankings.
+>
+> DeepSeek R1, Phi4-mini, Command R, Granite3.3 and Mistral were not rerun in v3. Each had produced zero structured tool calls in the original sweep, so the v3 changes could not affect its observed failure mode.
+>
+> `qwen3.5:2b` and `ministral-3` have denominators below 44 because reproducible Ollama 500 errors were excluded from scoring. These were ultimately traced to chat-template handling of assistant messages containing both text and tool calls.
 
-`finish_reason` is **not trustworthy on the Ollama path** — OllamaSharp reports `stop` even for
-turns that made tool calls. Do not use it to detect truncation; compare `total_output_tokens`
-against a known cap instead.
+Full reports for every model are available in the GitHub repo under the reports folder: <https://github.com/spenceclark/MovieAgent/tree/main/reports>
 
-### Repeated tool calls
+## What if I just gave it SQL?
 
-`Agent:BlockRepeatedToolCalls` (default true) intercepts a call byte-identical to one already
-made in the run and tells the model what that call returned last time, rather than executing it
-again. Every call is tagged `was_repeat` and `blocked` regardless of the setting, so repetition
-rate stays measurable either way.
+At the start I argued that giving the model `get_schema` and `execute_sql` would be a backdoor: one SQL join could replace a five-step tool chain. To check whether my deliberately constrained tools were themselves causing the failures, I ran a control using only those two SQL tools against the ten clean chain questions, twice per model.
 
-This is a variable, not a fix, and it does not uniformly help. On qwen3.5:4b it rescued
-`unanswerable-missing-entity` (cap hit → pass in 6 calls) and broke
-`unreachable-total-film-count` (pass in 4 calls → cap hit), because being told to stop repeating
-pushed it into exploring more terms instead of concluding. Run it both ways.
-
-### Navigation versus answer
-
-Every grade carries `required_tools`, `required_tools_missing` and `navigation_complete`,
-computed from whether the run successfully took each step in the question's `requires_tools`.
-
-`requires_tools` is a list of **steps**, each a list of alternative tools, any one of which
-satisfies that step — `[["search_film"], ["get_film_actor_ids", "count_film_actors"]]`. Counting
-a film's actors is `get_film_actor_ids` on standard and `count_film_actors` on enriched; with a
-flat list the enriched run reached the right answer by the better route and was recorded as
-having missed a required tool.
-"Reached the right rows but never resolved the last identifier" and "went somewhere else
-entirely" both score `correct: false`, and only one is interesting. The eval output prints the
-unreached tools inline, e.g. `FAIL hop5-title-2025-renter ... never reached get_customer`.
-
-It is a necessary condition, not a sufficient one — calling `get_customer` proves nothing about
-the argument. Read it as a floor on navigation quality.
-
-**NOT FIXED, DOCUMENTED INSTEAD.** `navigation_complete` verifies that every required tool was
-*reached*, not that the chain was *correct*. Real example, qwen2.5:3b, `hop4-inventory-store-city`
-(`runs-20260812-160025.jsonl`): the run calls `get_inventory_item`, `get_store`, `get_staff`,
-`get_address`, `get_city`, `get_country` — every required tool present — and answers "Yerevan,
-Armenia." That's wrong: it resolved the store's *manager's own home address* (via
-`manager_staff_id` → `get_staff` → that staff member's `address_id`), not the store's address
-(`get_store` already returns `address_id` directly). `navigation_complete` is `true` on this run
-regardless, because it only checks which tools ran, never which argument each one ran with. Same
-asymmetry as the truncation cross-check above: it can falsify a claim of navigation, it cannot
-confirm one.
-
-Substring answer matching has the mirror problem: it can pass an answer containing both correct
-and incorrect content. `"ADAPTATION HOLES is in English and Italian"` passes on `"Italian"`
-whether or not "English" being there too is also wrong for some other question shape. Neither of
-these has a general fix attempted here — read the transcript for anything the summary numbers
-alone make you want to trust.
-
-### Argument provenance and schema errors
-
-Two more diagnostics, both computed purely from `arguments_raw`, `result_text` and `question` —
-regrade-safe by the same rule as everything else on this page. See
-[ToolCallDiagnostics.cs](src/MovieAgent.Evaluation/ToolCallDiagnostics.cs) for the exact rules
-and their limits; the short version:
-
-- **`fabricated_argument_count` / `fabricated_arguments`.** An argument value is *grounded* if it
-  appears in the question or in an earlier tool call's result in the same run (never a
-  same-turn sibling call — the model has not seen a sibling's result when it proposes both), and
-  *fabricated* otherwise. `call_id_as_argument_count` is a fabricated-argument subset: values
-  matching `^call_\d+$`, which means the model read one of this harness's own normalised
-  tool-call identifiers out of the conversation and sent it back as though it were data — a
-  harness-caused failure mode, worth its own count rather than blending into ordinary
-  hallucination. `argument_type_mismatch_count` is the opposite kind of near-miss: the value
-  *is* grounded, just sent as the wrong JSON kind for the tool's declared parameter type, e.g.
-  `{"film_id":"3"}` where 3 is a real prior film_id but the tool declares an integer.
-- **`schema_error_count` / `schema_errors`.** Calls that failed for a wrong parameter name or
-  type, classified by matching the *exact* message substrings
-  [ToolArgumentBinder](src/MovieAgent.Agent/Tools/ToolArgumentBinder.cs) already produces (`does not
-  take '`, `requires the argument '`, `must be a whole number, but got '`), not by re-deriving
-  validation logic. Deliberately excludes out-of-range ids and too-short search terms — those
-  are the right type and shape, just referring to data that is not there, a data reason rather
-  than a schema one.
-
-Two correctness traps, both hit and fixed while building this, both worth knowing about before
-trusting the numbers on a new corpus:
-
-- **Row-count lines look like data.** Every successful tool result ends in a line like `"1
-  rows"`. Before this was stripped from the grounding search, a fabricated `film_id: 1` would
-  read as *grounded* purely because some earlier result happened to have exactly one row —
-  confirmed against `hop3-film-language`, where the real film_id is 3 and the model fabricated
-  `1`, and the only prior result ended in `"1 rows"`.
-- **Error messages echo the model's own bad input back.** `ToolArgumentBinder`'s messages
-  include the value that failed (`"...but got '$store_id'"`). Without excluding error results
-  from the grounding search, a fabricated value that already failed once looks *grounded* on
-  retry — via nothing but its own error message repeating it back. Confirmed against
-  `hop3-store-manager-email`: `$store_id` sent twice, correctly Fabricated both times only once
-  error text was excluded from the search corpus.
-
-**Known blind spot, not attempted.** Grounding is textual, not semantic — a value appearing
-*anywhere* in an earlier result counts, regardless of which column it came from. An id that is a
-real `store_id` in one row would ground an argument named `customer_id` using the same number.
-Column-aware grounding would need to parse each tool's result shape per call; this deterministic
-classifier does not attempt it, the same trade-off already made for substring answer matching
-above.
-
-### `EmptyAnswer`
-
-A run can stop calling tools with a blank final message. Before this existed that pooled under
-`Answered` alongside every ordinary wrong answer, indistinguishable without opening the
-transcript. `RunOutcomeClassifier.Effective` reclassifies `Answered` with a blank
-`final_answer` to `EmptyAnswer` — applied live in `AgentLoop` for new runs, and by `regrade` for
-old ones, from fields already on the record, no re-running needed. `eval`'s summary and
-`analyse.py` both report it as a separate count.
-
-### `mean_calls_per_iteration`
-
-The batching metric: total tool calls divided by iterations that made at least one call (an
-iteration that ends the run with zero calls would otherwise drag a per-iteration average toward
-zero without saying anything about batching). A model that always asks for one thing at a time
-sits at 1.0; `fanout-actor-most-films` batching three `count_actor_films` calls into a single
-turn pulls it up. Printed in `eval`'s summary and in `analyse.py`'s per-model breakdown.
-
-## Eval sets
-
-Two files under `EvalSet/`: `pagila-v1.json` (13 questions, unchanged) and `pagila-v2.json`
-(8 more — near-miss recovery, graded declines, fan-out at depth, truncation handling). Additive
-by design; running v1 alone reproduces its numbers exactly.
-
-`EvalSet:Files` selects which to load (comma-separated), default `pagila-v1.json`:
-
-```bash
-EvalSet__Files=pagila-v2.json dotnet run --project src/MovieAgent -- eval
-EvalSet__Files=pagila-v1.json,pagila-v2.json dotnet run --project src/MovieAgent -- verify
-```
-
-`verify`, `eval`, `regrade` and `determinism` all honour it. Question ids must be unique across
-the whole selection — a v1/v2 id collision fails loudly at load rather than silently overriding.
-
-### v1 (13 questions)
-
-[pagila-v1.json](src/MovieAgent.Evaluation/EvalSet/pagila-v1.json) — 13 questions, each with
-reference SQL, expected answer, and expected hop depth (2 to 5). Three refusal cases, which are
-three genuinely different behaviours:
-
-- `unanswerable-missing-entity` — the film does not exist. Decline on every surface.
-- `unreachable-total-film-count` — no path to a total on `minimal` or `standard`; becomes
-  answerable on `enriched`. This is the direct measurement of what the counting tool buys.
-- `ambiguous-sumo-2025-renter` — **ill-posed, not unanswerable.** 82 films mention a sumo
-  wrestler, across 392 copies and 805 rentals in 2025, giving 545 valid answers. Correct
-  behaviour is to report the ambiguity, not to pick one.
-
-**Do not seed a deep-chain question from a description.** Pagila's descriptions are
-combinatorial templates, so no natural phrase isolates a single film — a single noun matches
-30–80 of 1000, and even *"teacher in an abandoned mine shaft"* matches 5 films with 27 renters
-between them. Seed deep chains from a title or an identifier, where hop 1 is exact, so the run
-measures planning rather than search selectivity.
-
-Reachability is surface-relative. Each question lists `requires_tools`; if the selected surface
-lacks any of them, the expected behaviour flips to decline automatically. Running the whole set
-on `minimal` therefore turns most questions into refusal cases without editing anything.
-
-## Analysis
-
-```bash
-python scripts/analyse.py runs/sweep-n3.jsonl
-```
-
-Reports accuracy and navigation per surface and per hop depth, refusal rates, runs that
-navigated correctly but still answered wrong, and — the reason n>1 matters — **run-to-run
-variance**: question/surface pairs that did not always land the same way despite a fixed seed.
-
-Temperature 0 and a fixed seed do not make this stack deterministic. Until you know that noise
-floor, no surface comparison is readable, because a one-question difference between surfaces
-may just be the same question flipping. Run n≥3 before believing any surface effect.
-
-**The eval answers are specific to this database.** It is a scaled Pagila variant (999
-customers, 1500 staff, 500 stores, films in several categories) and the answers are not
-portable to stock Pagila. Run `verify` after any reload.
-
-### v2 (8 more questions)
-
-Closes four gaps v1 couldn't see:
-
-| Category | Questions | Tests |
+| Model | Constrained tools | SQL shortcut |
 | --- | --- | --- |
-| Near-miss recovery | `nearmiss-film-language`, `nearmiss-film-rate`, `nearmiss-actor-film-count`, `nearmiss-word-order` | A plausible first search fails (NO ROWS); does the model retry rather than declining or hallucinating? Four distinct distortion shapes on purpose — three fail by a wrong/extra word recoverable by shortening the same failed query from one end, the fourth (`nearmiss-word-order`) is a straight word-swap that trimming can't recover from at all (verified: no prefix or suffix of the failed query matches), forcing a search on the individual words instead. If a local model recovers from the first three but not the fourth, that is evidence it can shorten a query but not actually search under a wrong assumption — a materially narrower capability than "near-miss recovery" would suggest from the first three alone. |
-| Graded declines | `decline-easy-category` (one tool, one NO ROWS), `decline-hard-director` (film exists, field genuinely absent from the schema — must be recognised after reading the record, not from an empty result) | Whether refusal accuracy holds at a harder difficulty than "entity doesn't exist" |
-| Fan-out at depth | `fanout-store-cities` (breadth 2, depth 3 per branch), `fanout-actor-most-films` (breadth 3, depth 2 per branch) | Every v1 3+ hop question was a single linear chain. These require collapsing or comparing several branches, not just following one. |
-| Truncation | `truncation-category-count` | `get_category_film_ids` caps at 50; Horror has 142. The frozen output format states the true total on the count line even when truncated — the question is whether the model reads it correctly or answers 50. Grading cross-checks this rather than trusting a bare correct/incorrect score: `ToolOutputFormat.TryParseTruncation` recovers the stated total from every tool call in the run, independent of what the model wrote, and every graded run carries `truncation_seen` / `truncation_stated_total` / `answer_matches_stated_total`. A match isn't proof the model read the line (it could land on the right number some other way), but a mismatch is proof the answer didn't come from there — which a bare pass/fail can't distinguish from a correctly-read one. `scripts/analyse.py` prints a cross-check section for any run that saw truncation, not just this question. |
+| granite3.3:8b | 0/20 | 0/20 |
+| command-r7b | 0/20 | 0/20 |
+| llama3.2 | 0/20 | 0/20 |
+| mistral-nemo:12b | 0/20 | 2/20 |
+| gemma4:e4b | 18/20 | 18/20 |
+| qwen3.5:4b | 18/20 | 20/20 |
 
-`expected_hops` follows v1's own convention — the length of the shortest tool-call chain under
-the current catalogue — not a literal SQL join count, because a literal join count does not
-reproduce v1's own numbers (`hop2-actor-count`'s reference SQL joins two tables and is still
-hop2, since `get_film_actor_ids` consumes the `film_id` search already returned with no
-intermediate read). This is documented in `pagila-v2.json`'s own notes.
+The SQL control used a separate system prompt tailored to those two tools.
 
-Calibration: gpt-5.4 on `enriched`, **9/9**, all hop depths 100%, 0 over-refusals, 0 repeated
-calls, recovered from all four near-miss shapes including the word-order swap. Two of the nine
-initially failed on a real grader bug the near-miss questions were designed to surface: the
-model wrote *"I couldn't find CASABLANCA NIGHTS... CASABLANCA SUPER is 4.99,"* both declining
-and answering correctly in the same breath, and the grader's decline check ran first and never
-looked at whether a right answer followed. Fixed by checking the answer's value first and only
-falling back to refusal detection on an actual miss — validated by regrading every run recorded
-to date before trusting it, twice (once per grader change in this batch): zero spurious flips
-either time.
+Across the four failing models the shortcut improved the result by only two runs out of eighty. Granite and Command R still made no structured tool calls. Llama3.2 wrote SQL before inspecting the schema in every run and all 24 of its queries failed. Mistral-Nemo remained a one-call model: in 14 runs it retrieved the schema and then stopped without executing anything; in the other six it wrote SQL first. its two passes were the two repeats of the only question it could answer with a single direct query.
+
+Gemma and Qwen were the only models that both read the schema and continued to SQL on every run. Gemma remained at 18/20. Qwen improved from 18/20 on the same constrained questions to 20/20 with SQL, showing that the shortcut can help a model that already uses tools competently. It did not turn any of the failing models into a useful one.
+
+This is not evidence that SQL is a better agent interface—text-to-SQL is a different and much more heavily trained task. It is evidence that the constrained tool surface was not manufacturing the failures. The successful models checked, acted on what they found and continued; the unsuccessful ones failed before the shorter route could help them.
+
+## Conclusion
+
+The answer to my original question is yes: a local model running on modest hardware can work as an agent. `Qwen3.5:9b` scored 42/44, only one strict run behind `GPT-5.4`, while the 4B version reached 38/44, ahead of both GPT-4o models. Even the 1.8GB Q4 model scored 34/44, although its high score came with severe looping and budget-control problems; small did not necessarily mean clean or reliable.
+
+But the leaderboard is not the most useful result. Following a clean chain was rarely the difficult part. The differences appeared when a lookup returned nothing, when one result had to be followed down several branches, or when the model needed to recognise that the available evidence was insufficient. In other words, the hard part was not making tool calls; it was deciding what to do when the obvious next call did not work.
+
+The failures were also behavioural rather than simply a question of model size. Some models never entered the tool channel. Some made one call and stopped regardless of the result. Others guessed identifiers or schema rather than checking them. The strongest models searched, inspected what came back, corrected themselves and continued until they had either found an evidence-backed answer or established that one was not reachable.
+
+That makes the agent loop itself almost the least interesting part of the system. It is only a small amount of code. The difficult and important work is designing a tool surface that exposes the right capabilities, recording the path the model took, and evaluating more than whether its final response happened to contain the expected string.
+
+This is not a universal ranking of these models. It is one database, one tool catalogue and one set of questions. What it does show is that small local models can be genuinely capable agents within a well-defined domain—and that testing them requires broken paths, ambiguity and opportunities to recover, not just longer and longer happy-path chains.
