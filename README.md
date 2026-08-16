@@ -304,7 +304,7 @@ Command R refused almost every answerable question. Granite3.3 behaved different
 I'm sorry, but I don't have access to information about replacement costs. The available tools allow me to search for films by title, retrieve film details including actor and category information, find customers or actors, get language details, address and store information, and more. However, there's no tool provided to retrieve the replacement cost of a film.
 ```
 
-So Command R knew it had tools, but because no single tool exactly matched what it needed, it refused to go further.
+Command R7B is the sharpest case, because the failure is entirely in the packaging. Ollama's bundled template has two bugs. Every generation prompt ends with `<|START_RESPONSE|>` — the token Cohere's own preamble defines as "break out of the loop" — so the model is placed in the final-response branch before it can act. And the tool definitions are rendered with `{{ .Function }}`, which emits a Go struct dump rather than JSON, so the schema the model is shown is malformed. Given both fixes it calls tools immediately. Taken as published, it scores zero, declares tools support, and gives no indication anything is wrong — which is the version anyone running `ollama pull command-r7b` will get.
 
 ### A generation later
 
