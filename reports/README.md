@@ -43,6 +43,7 @@ untouched; the regraded copies sit alongside them as `.regraded.jsonl`.
 | `gpt-4o` | [gpt-4o--standard-desc.md](gpt-4o--standard-desc.md) | 33/44 | **75.0** | 33 | 7/8 | 8 | 125 | 0 |
 | `gpt-4o-mini` | [gpt-4o-mini--standard-desc.md](gpt-4o-mini--standard-desc.md) | 33/44 | **75.0** | 33 | 6/8 | 7 | 149 | 0 |
 | `gemma4:e4b` | [gemma4-e4b--standard-desc.md](gemma4-e4b--standard-desc.md) | 32/44 | **72.7** | 32 | 8/8 | 8 | 104 | 0 |
+| `granite4.1:8b` | [granite4-1-8b--standard-desc.md](granite4-1-8b--standard-desc.md) | 31/44 | **70.5** | 31 | 6/8 | 5 | 146 | 0 |
 | `gemma4:e2b` | [gemma4-e2b--standard-desc.md](gemma4-e2b--standard-desc.md) | 29/44 | **65.9** | 29 | 7/8 | 8 | 100 | 0 |
 | `qwen2.5:7b` | [qwen2-5-7b--standard-desc.md](qwen2-5-7b--standard-desc.md) | 25/44 | **56.8** | 27 | 8/8 | 12 | 121 | 0 |
 | `ministral-3` | [ministral-3--standard-desc.md](ministral-3--standard-desc.md) | 24/43 | **55.8** | 24 | 7/8 | 10 | 107 | 0 |
@@ -56,7 +57,13 @@ untouched; the regraded copies sit alongside them as `.regraded.jsonl`.
 
 ## Not re-run — zero tool calls, contract 1.1
 
-These five made **literally zero tool calls** across every recorded run. Neither a tool-call budget nor permission to batch can move a model that never calls a tool, so they were left at their v1 numbers rather than burning GPU time to reproduce a zero. See [RESULTS-ANALYSIS.md](../RESULTS-ANALYSIS.md) for what each was doing instead.
+These five made **literally zero tool calls** across every recorded run. Neither a tool-call budget
+nor permission to batch can move a model that never calls a tool, so they were left at their v1
+numbers rather than burning GPU time to reproduce a zero.
+
+`granite3.3:8b` is superseded by **`granite4.1:8b`** in the table above — same family, same size, and
+it uses the tool channel correctly. Its report is kept because the contrast is the point: the
+predecessor never emitted a structured call at all. See [RESULTS-ANALYSIS.md](../RESULTS-ANALYSIS.md) for what each was doing instead.
 
 | Model | Report |
 |---|---|

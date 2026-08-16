@@ -152,7 +152,7 @@ The evaluation code in MovieAgent.Evaluation is where I spent most of the develo
 
 > These tests were carried out on a RTX 3070 with 8GB of VRAM. Models were chosen to fit inside this limit. A couple overflowed onto CPU slightly, but these tests do not measure wall-time. Ollama was used to run the models.
 
-The final sweep tested 22 models on 23 questions, twice each: 1,012 recorded runs.
+The final sweep tested 23 models on 23 questions, twice each: 1,058 recorded runs.
 
 One deliberately ambiguous question was retained as an unscored exhibit, leaving 44 scored runs per model.
 
@@ -298,13 +298,25 @@ The output will contain the replacement cost as one of its fields.
 
 Phi4 emitted **structurally correct tool-call JSON, with real tool names and real parameter names** — into the content channel, missing only the `<|tool_call|>` delimiter its own chat template requires.
 
-Command R refused almost every answerable question. Granite behaved differently: it often described or printed plausible tool calls in ordinary response text, but never entered the structured tool channel.
+Command R refused almost every answerable question. Granite3.3 behaved differently: it often described or printed plausible tool calls in ordinary response text, but never entered the structured tool channel.
 
 ```text
 I'm sorry, but I don't have access to information about replacement costs. The available tools allow me to search for films by title, retrieve film details including actor and category information, find customers or actors, get language details, address and store information, and more. However, there's no tool provided to retrieve the replacement cost of a film.
 ```
 
 So Command R knew it had tools, but because no single tool exactly matched what it needed, it refused to go further.
+
+### A generation later
+
+While writing this up I found Granite4.1:8b — same family and size as the Granite3.3 in the table above, which never emitted a single structured tool call. The new one placed 13th of 23 at 31/44. So "cannot use tools" was a property of that release, not of the family or the size.
+
+It is also the cleanest model in the sweep mechanically. Across 146 calls it produced no schema errors, no fabricated row IDs, no type mismatches and no malformed arguments, and it never hit the call budget or the iteration guard. Nothing else in the table, including GPT-5.4, is that tidy.
+
+It still finished mid-table, and that is the point. Chains 20/22 and truncation 2/2, but near-miss 1/8. On every near-miss it searched the title, then searched descriptions, then gave up — trying a second tool rather than a shorter search term. One retry of search_film("PHANTOM") would have solved three of the four.
+
+Twice it answered with the identifier rather than the name — "actor ID 128", "customer 832" — having walked the chain correctly and stopped one step short, with ten calls of budget unspent. And on the director question, which exists to catch invention, it asserted that ACADEMY DINOSAUR was directed by Tom Cruise on one repeat and drifted into Johnny Cage on the other.
+
+Being able to call tools cleanly and knowing what to do when a call comes back empty are different capabilities, and this model has the first without much of the second.
 
 ## Scores
 
@@ -334,23 +346,24 @@ So Command R knew it had tools, but because no single tool exactly matched what 
 | 10= | gpt-4o | 33/44 | 33/44 | **75.0** | 26/36 | 7/8 | 8 | 2.84 |
 | 10= | gpt-4o-mini | 33/44 | 33/44 | **75.0** | 27/36 | 6/8 | 7 | 3.39 |
 | 12 | gemma4:e4b | 32/44 | 32/44 | **72.7** | 24/36 | 8/8 | 8 | 2.36 |
-| 13 | gemma4:e2b | 29/44 | 29/44 | **65.9** | 22/36 | 7/8 | 8 | 2.27 |
-| 14 | qwen2.5:7b | 27/44 | 25/44 | **56.8** | 19/36 | 8/8 | 12 | 2.75 |
-| 15 | ministral-3 | 24/43 | 24/43 | **55.8** | 17/35 | 7/8 | 10 | 2.49 |
-| 16 | qwen3.5:2b | 22/42 | 22/42 | **52.4** | 20/36 | 2/6 | 6 | 5.76 |
-| 17 | qwen2.5:3b | 11/44 | 11/44 | **25.0** | 6/36 | 5/8 | 9 | 3.75 |
-| 18 | hermes3:8b | 12/44 | 7/44 | **15.9** | 7/36 | 5/8 | 5 | 1.93 |
-| 19 | mistral-nemo:12b | 6/44 | 6/44 | **13.6** | 0/36 | 6/8 | 11 | 1.16 |
-| 20 | llama3.2 | 4/44 | 4/44 | **9.1** | 0/36 | 4/8 | 6 | 1.00 |
-| 21 | llama3.1 | 6/44 | 3/44 | **6.8** | 6/36 | 0/8 | 11 | 2.84 |
-| 22 | qwen2.5:1.5b | 4/44 | 2/44 | **4.5** | 2/36 | 2/8 | 2 | 0.34 |
+| 13 | granite4.1:8b | 31/44 | 31/44 | 70.5 | 25/36 | 6/8 | 5 | 3.32 |
+| 14 | gemma4:e2b | 29/44 | 29/44 | **65.9** | 22/36 | 7/8 | 8 | 2.27 |
+| 15 | qwen2.5:7b | 27/44 | 25/44 | **56.8** | 19/36 | 8/8 | 12 | 2.75 |
+| 16 | ministral-3 | 24/43 | 24/43 | **55.8** | 17/35 | 7/8 | 10 | 2.49 |
+| 17 | qwen3.5:2b | 22/42 | 22/42 | **52.4** | 20/36 | 2/6 | 6 | 5.76 |
+| 18 | qwen2.5:3b | 11/44 | 11/44 | **25.0** | 6/36 | 5/8 | 9 | 3.75 |
+| 19 | hermes3:8b | 12/44 | 7/44 | **15.9** | 7/36 | 5/8 | 5 | 1.93 |
+| 20 | mistral-nemo:12b | 6/44 | 6/44 | **13.6** | 0/36 | 6/8 | 11 | 1.16 |
+| 21 | llama3.2 | 4/44 | 4/44 | **9.1** | 0/36 | 4/8 | 6 | 1.00 |
+| 22 | llama3.1 | 6/44 | 3/44 | **6.8** | 6/36 | 0/8 | 11 | 2.84 |
+| 23 | qwen2.5:1.5b | 4/44 | 2/44 | **4.5** | 2/36 | 2/8 | 2 | 0.34 |
 | — | deepseek-r1:8b | — | — | — | — | — | — | — |
 | — | phi4-mini | — | — | — | — | — | — | — |
 | — | command-r7b | — | — | — | — | — | — | — |
 | — | granite3.3:8b | — | — | — | — | — | — | — |
 | — | mistral | — | — | — | — | — | — | — |
 
-> All models were run twice per question, so one changed run moves a score by 2.3 percentage points. The local models produced identical outcomes across their two repeats, while several hosted-model repeats differed. Small gaps involving hosted models should therefore not be read as precise rankings.
+> All models were run twice per question, so one changed run moves a score by 2.3 percentage points. The strongest local models produced identical outcomes across their two repeats; several weaker ones did not, and neither did most hosted models. Small gaps involving hosted models should therefore not be read as precise rankings.
 >
 > DeepSeek R1, Phi4-mini, Command R, Granite3.3 and Mistral were not rerun in v3. Each had produced zero structured tool calls in the original sweep, so the v3 changes could not affect its observed failure mode.
 >
@@ -373,7 +386,7 @@ At the start I argued that giving the model `get_schema` and `execute_sql` would
 
 The SQL control used a separate system prompt tailored to those two tools.
 
-Across the four failing models the shortcut improved the result by only two runs out of eighty. Granite and Command R still made no structured tool calls. Llama3.2 wrote SQL before inspecting the schema in every run and all 24 of its queries failed. Mistral-Nemo remained a one-call model: in 14 runs it retrieved the schema and then stopped without executing anything; in the other six it wrote SQL first. its two passes were the two repeats of the only question it could answer with a single direct query.
+Across the four failing models the shortcut improved the result by only two runs out of eighty. Granite3.3 and Command R still made no structured tool calls. Llama3.2 wrote SQL before inspecting the schema in every run and all 24 of its queries failed. Mistral-Nemo remained a one-call model: in 14 runs it retrieved the schema and then stopped without executing anything; in the other six it wrote SQL first. its two passes were the two repeats of the only question it could answer with a single direct query.
 
 Gemma and Qwen were the only models that both read the schema and continued to SQL on every run. Gemma remained at 18/20. Qwen improved from 18/20 on the same constrained questions to 20/20 with SQL, showing that the shortcut can help a model that already uses tools competently. It did not turn any of the failing models into a useful one.
 

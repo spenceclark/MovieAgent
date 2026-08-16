@@ -1,8 +1,12 @@
 # MovieAgent — sweep v3
 
-**22 models, 23 questions, n=2, 1,012 recorded runs.** Output-format contract **1.3**, and a changed
+**23 models, 23 questions, n=2, 1,058 recorded runs.** Output-format contract **1.3**, and a changed
 system prompt.
 
+> **`granite4.1:8b` added 2026-08-16**, at the same configuration, prompt hash and tool-schema hash
+> as the rest of the sweep. It is a 23rd model, not a re-run, so it does not affect the regrade
+> figures below — it was recorded under v5 from the start.
+>
 > **Final-score update: regraded under `deterministic-substring-v5`.** The sweep was recorded under
 > v3, whose refusal detection had no `category` among its result nouns and no *reach* / *provide* /
 > *count* among its inability verbs — so *"there is no Steampunk category in the database"*, the
@@ -96,20 +100,22 @@ getting a question visibly wrong and being marked right.
 | 10= | gpt-4o | 33/44 | 75.0 | 26/36 | 7/8 | 8 | 2.84 |
 | 10= | gpt-4o-mini | 33/44 | 75.0 | 27/36 | 6/8 | 7 | 3.39 |
 | 12 | gemma4:e4b | 32/44 | 72.7 | 24/36 | 8/8 | 8 | 2.36 |
-| 13 | gemma4:e2b | 29/44 | 65.9 | 22/36 | 7/8 | 8 | 2.27 |
-| 14 | qwen2.5:7b | 25/44 | 56.8 | 19/36 | 8/8 | 12 | 2.75 |
-| 15 | ministral-3 | 24/43 | 55.8 | 17/35 | 7/8 | 10 | 2.49 |
-| 16 | qwen3.5:2b | 22/42 | 52.4 | 20/36 | 2/6 | 6 | 5.76 |
-| 17 | qwen2.5:3b | 11/44 | 25.0 | 6/36 | 5/8 | 9 | 3.75 |
-| 18 | hermes3:8b | 7/44 | 15.9 | 7/36 | 5/8 | 5 | 1.93 |
-| 19 | mistral-nemo:12b | 6/44 | 13.6 | 0/36 | 6/8 | 11 | 1.16 |
-| 20 | llama3.2 | 4/44 | 9.1 | 0/36 | 4/8 | 6 | 1.00 |
-| 21 | llama3.1 | 3/44 | 6.8 | 6/36 | 0/8 | 11 | 2.84 |
-| 22 | qwen2.5:1.5b | 2/44 | 4.5 | 2/36 | 2/8 | 2 | 0.34 |
+| 13 | granite4.1:8b | 31/44 | 70.5 | 25/36 | 6/8 | 5 | 3.32 |
+| 14 | gemma4:e2b | 29/44 | 65.9 | 22/36 | 7/8 | 8 | 2.27 |
+| 15 | qwen2.5:7b | 25/44 | 56.8 | 19/36 | 8/8 | 12 | 2.75 |
+| 16 | ministral-3 | 24/43 | 55.8 | 17/35 | 7/8 | 10 | 2.49 |
+| 17 | qwen3.5:2b | 22/42 | 52.4 | 20/36 | 2/6 | 6 | 5.76 |
+| 18 | qwen2.5:3b | 11/44 | 25.0 | 6/36 | 5/8 | 9 | 3.75 |
+| 19 | hermes3:8b | 7/44 | 15.9 | 7/36 | 5/8 | 5 | 1.93 |
+| 20 | mistral-nemo:12b | 6/44 | 13.6 | 0/36 | 6/8 | 11 | 1.16 |
+| 21 | llama3.2 | 4/44 | 9.1 | 0/36 | 4/8 | 6 | 1.00 |
+| 22 | llama3.1 | 3/44 | 6.8 | 6/36 | 0/8 | 11 | 2.84 |
+| 23 | qwen2.5:1.5b | 2/44 | 4.5 | 2/36 | 2/8 | 2 | 0.34 |
 
 **Not re-run:** deepseek-r1:8b, phi4-mini, command-r7b, granite3.3:8b, mistral. All five made
 literally zero tool calls in v1, and neither a call budget nor permission to batch can move a model
-that never calls a tool.
+that never calls a tool. `granite3.3:8b` is superseded in the table above by **`granite4.1:8b`** —
+see [what a generation buys](#what-a-generation-buys-granite-33-to-41).
 
 **`qwen3.5:2b` is scored on 42 runs and `ministral-3` on 43**, not 44 — see
 [reproducible server errors](#two-reproducible-500s) below. Read rates, not raw counts.
@@ -212,14 +218,64 @@ chains** — 38% once navigation is required, and still the least trustworthy nu
 
 ---
 
+## What a generation buys: granite 3.3 to 4.1
+
+`granite3.3:8b` is one of the five hard failures — **zero structured tool calls** across 44 runs,
+describing calls in prose instead of emitting them. `granite4.1:8b`, same family and same size,
+places **13th of 23 at 70.5%**. The tool channel went from unusable to unremarkable in one release,
+which is the cleanest before-and-after in the corpus because nothing else about the run differs:
+identical prompt hash, tool-schema hash, budget and seed.
+
+**Mechanically it is one of the cleanest models in the sweep.** Across 146 calls:
+
+| | granite4.1:8b |
+|---|---|
+| schema errors | **0** |
+| fabricated row ids | **0** |
+| fabricated search terms | 5 |
+| type mismatches | **0** |
+| call-ids passed as arguments | **0** |
+| blocked repeats | 2 |
+| cap hits / budget exhaustions | **0 / 0** |
+| errored or empty runs | **0** |
+
+Most models at this level carry double-digit fabricated ids. This one invents nothing it was not
+given, never malforms a call, and never loops. What it loses, it loses on judgement.
+
+**It stops at the identifier.** Two questions, four runs, lost to answering with an id where a name
+was asked for — `navigation_complete: false` on all four, with ten calls of budget unspent:
+
+> "the actor with the most film credits … is **actor ID 128**, who has appeared in 30 films"
+> "was rented in 2025 by **customer 832**"
+
+It walked both chains correctly and then declined to take the last step.
+
+**Near-miss 1/8, and the failure is a distinctive one.** On all four near-miss questions it runs
+`search_film` → `search_film_description` → gives up. That is not the GPT-4o failure of stopping
+after one search; it genuinely tries a second avenue. But it reaches for a **different tool** rather
+than a **shorter search term**, and a single retry of `search_film("PHANTOM")` would have solved
+three of the four. Trying harder along the wrong axis.
+
+**And it is one of the few models that fabricates a director.** `decline-hard-director` exists to
+catch exactly this, and it had already navigated to the film record before answering:
+
+> "The film **ACADEMY DINOSAUR** was directed by **Tom Cruise**." *(repeat 2)*
+> "… lists **Johnny Cage** (actor_id 40) as one of its credited actors. In the typical casting for
+> this title …" *(repeat 1)*
+
+Two different inventions across two repeats of the same question. Most of the field correctly
+reports that the schema exposes no director; this one asserts a name, twice, differently.
+
+---
+
 ## Hop depth
 
 | hops | answered | navigated |
 |---|---|---|
-| 2 | 162/308 (53%) | 172/308 (56%) |
-| 3 | 145/220 (66%) | 145/220 (66%) |
-| 4 | 92/176 (52%) | 93/176 (53%) |
-| 5 | 58/87 (67%) | 58/87 (67%) |
+| 2 | 170/322 (53%) | 182/322 (57%) |
+| 3 | 154/230 (67%) | 154/230 (67%) |
+| 4 | 96/184 (52%) | 97/184 (53%) |
+| 5 | 62/91 (68%) | 62/91 (68%) |
 
 Depth still does not predict difficulty — hop 5 outscores hop 2. v1's concern 1 stands and is now
 better evidenced: the buckets are confounded by question *type*, not chain *length*. The hop-2
